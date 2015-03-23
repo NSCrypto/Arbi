@@ -12,8 +12,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -34,10 +32,6 @@ import javax.speech.EngineStateError;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tsavo.trade.opportunity.Opportunity;
 import com.tsavo.trade.opportunity.OpportunityFinder;
-import com.tsavo.trade.opportunity.arbitrage.ArbitrageOpportunityFinder;
-import com.tsavo.trade.opportunity.gain.PriceDifferenceOpportunityFinder;
-import com.tsavo.trade.opportunity.manual.ManualOrderCreator;
-import com.tsavo.trade.opportunity.rsi.ChartingOpportunityFinder;
 import com.tsavo.trade.portfolio.HoldingsReport;
 import com.tsavo.trade.portfolio.Portfolio;
 import com.tsavo.trade.portfolio.TickerData;
@@ -54,13 +48,6 @@ import com.xeiam.xchange.exceptions.ExchangeException;
 import com.xeiam.xchange.exceptions.NotAvailableFromExchangeException;
 import com.xeiam.xchange.exceptions.NotYetImplementedForExchangeException;
 
-/**
- * https://github.com/adv0r/mtgox-apiv2-java
- * 
- * @author adv0r <leg@lize.it> MIT License (see LICENSE.md) Run examples at your
- *         own risk. Only partially implemented and untested. Consider donations @
- *         1N7XxSvek1xVnWEBFGa5sHn1NhtDdMhkA7
- */
 public class TradeBot {
 
 	public static class Finder implements Runnable {

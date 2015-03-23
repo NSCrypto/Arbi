@@ -12,7 +12,6 @@ import com.xeiam.xchange.Exchange;
 import com.xeiam.xchange.currency.CurrencyPair;
 import com.xeiam.xchange.dto.marketdata.OrderBook;
 import com.xeiam.xchange.dto.trade.LimitOrder;
-import com.xeiam.xchange.service.polling.PollingMarketDataService;
 
 public class ArbitrageOpportunityFinder implements OpportunityFinder {
 
@@ -32,13 +31,11 @@ public class ArbitrageOpportunityFinder implements OpportunityFinder {
 			Map<List<LimitOrder>, Exchange> asks = new HashMap<List<LimitOrder>, Exchange>();
 			Map<List<LimitOrder>, Exchange> bids = new HashMap<List<LimitOrder>, Exchange>();
 			for (Exchange exchange : exchanges) {
-				if (!exchange.isSupportedCurrencyPair(pair)) {
-					continue;
-				}
+				
 				try {
-					PollingMarketDataService service = exchange.getPollingMarketDataService();
+					com.xeiam.xchange.service.polling.marketdata.PollingMarketDataService service = exchange.getPollingMarketDataService();
 
-					OrderBook book = service.getFullOrderBook(pair.baseCurrency, pair.counterCurrency);
+					OrderBook book = service.getOrderBook(pair);
 					asks.put(book.getAsks(), exchange);
 					bids.put(book.getBids(), exchange);
 				} catch (Exception e) {
@@ -54,15 +51,15 @@ public class ArbitrageOpportunityFinder implements OpportunityFinder {
 							if (askList.getValue().equals(bidList.getValue())) {
 								continue outer;
 							}
-							if (ask.getLimitPrice().isLessThan(bid.getLimitPrice())) {
-								float difference = bid.getLimitPrice().getAmount().floatValue() - ask.getLimitPrice().getAmount().floatValue();
+							if (ask.getLimitPrice().floatValue() < bid.getLimitPrice().floatValue()) {
+								float difference = bid.getLimitPrice().floatValue() - ask.getLimitPrice().floatValue();
 								// BigMoney average =
 								// bid.getLimitPrice().toBigMoney().plus(ask.getLimitPrice().toBigMoney()).dividedBy(2l,
 								// RoundingMode.HALF_EVEN);
-								float percent = (difference / Math.max(bid.getLimitPrice().getAmount().floatValue(), ask.getLimitPrice().getAmount().floatValue())) * 100;
+								float percent = (difference / Math.max(bid.getLimitPrice().floatValue(), ask.getLimitPrice().floatValue())) * 100;
 								if (percent >= 1.1 && ask.getTradableAmount().floatValue() >= 1 && bid.getTradableAmount().floatValue() >= 1) {
-									System.out.println("Arbitrage opportunity found: " + bid.getTradableIdentifier() + "->" + bid.getTransactionCurrency() + " Bid: " + bid.getLimitPrice().getAmount().toPlainString() + " @ " + bidList.getValue().getExchangeSpecification().getExchangeName() + "("
-											+ bid.getTradableAmount().floatValue() + "), Ask: " + ask.getLimitPrice().getAmount().toPlainString() + " @ " + askList.getValue().getExchangeSpecification().getExchangeName() + "(" + ask.getTradableAmount().floatValue() + ") (" + percent + "% gain)");
+									System.out.println("Arbitrage opportunity found: " + pair.baseSymbol + "->" + pair.counterSymbol + " Bid: " + bid.getLimitPrice().toPlainString() + " @ " + bidList.getValue().getExchangeSpecification().getExchangeName() + "("
+											+ bid.getTradableAmount().floatValue() + "), Ask: " + ask.getLimitPrice().toPlainString() + " @ " + askList.getValue().getExchangeSpecification().getExchangeName() + "(" + ask.getTradableAmount().floatValue() + ") (" + percent + "% gain)");
 									ArbitrageOpportunity opportunity = new ArbitrageOpportunity(pair, askList.getValue(), ask, bidList.getValue(), bid, percent);
 									opportunity.setCurrencyPair(pair);
 									opportunities.add(opportunity);
