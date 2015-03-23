@@ -14,9 +14,7 @@ public class CurrencyCycle {
 		baseSymbol = aBaseSymbol;
 	}
 
-
-	public CurrencyCycle(String aBaseSymbol, CurrencyCycle aParentCycle
-			) {
+	public CurrencyCycle(String aBaseSymbol, CurrencyCycle aParentCycle) {
 		this(aBaseSymbol);
 		parentCycle = aParentCycle;
 	}
@@ -30,16 +28,17 @@ public class CurrencyCycle {
 		return all;
 	}
 
-	public CurrencyCycle populateCycles(Set<CurrencyPair> someCurrencyPairs,
+	public CurrencyCycle populateCycles(List<CurrencyPair> someCurrencyPairs,
 			String rootCurrency) {
 		findCycle(someCurrencyPairs, baseSymbol, this, rootCurrency);
 		return this;
 	}
 
-	private CurrencyCycle findCycle(Set<CurrencyPair> someCurrencyPairs,
+	private CurrencyCycle findCycle(List<CurrencyPair> someCurrencyPairs,
 			String aCurrency, CurrencyCycle currentCycle, String rootCurrency) {
 
-		Set<String> nexts = findNextInCycle(aCurrency, someCurrencyPairs);
+
+		List<String> nexts = findNextInCycle(aCurrency, someCurrencyPairs);
 
 		for (String next : nexts) {
 			if (currentCycle.GetCurrencyCycle().contains(next)
@@ -54,7 +53,7 @@ public class CurrencyCycle {
 				cycle = new CurrencyCycle(next, currentCycle);
 				currentCycle.counterSymbols.add(cycle);
 				cycle.populateCycles(someCurrencyPairs, rootCurrency);
-				if(cycle.counterSymbols.size() == 0){
+				if (cycle.counterSymbols.size() == 0) {
 					currentCycle.counterSymbols.remove(cycle);
 				}
 			}
@@ -62,15 +61,15 @@ public class CurrencyCycle {
 		return currentCycle;
 	}
 
-	private Set<String> findNextInCycle(String aCurrency,
-			Set<CurrencyPair> somePairs) {
+	private List<String> findNextInCycle(String aCurrency,
+			List<CurrencyPair> somePairs) {
 		return somePairs
 				.stream()
 				.filter(x -> hasCurrency(x, aCurrency))
 				.map(x -> {
 					return x.baseSymbol.equals(aCurrency) ? x.counterSymbol
 							: x.baseSymbol;
-				}).collect(Collectors.<String> toSet());
+				}).collect(Collectors.<String> toList());
 	}
 
 	private boolean hasCurrency(CurrencyPair aPair, String aCurrency) {
@@ -85,8 +84,8 @@ public class CurrencyCycle {
 		return 1 + parentCycle.GetCycleLength();
 	}
 
-	public Set<CurrencyCycle> GetAllLeaves() {
-		Set<CurrencyCycle> leaves = new HashSet<>();
+	public List<CurrencyCycle> GetAllLeaves() {
+		List<CurrencyCycle> leaves = new ArrayList<>();
 		if (this.counterSymbols.size() == 0) {
 			leaves.add(this);
 		} else {
@@ -99,5 +98,5 @@ public class CurrencyCycle {
 
 	CurrencyCycle parentCycle;
 	String baseSymbol;
-	Set<CurrencyCycle> counterSymbols = new HashSet<CurrencyCycle>();
+	List<CurrencyCycle> counterSymbols = new ArrayList<CurrencyCycle>();
 }
