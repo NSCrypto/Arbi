@@ -1,9 +1,8 @@
 package com.tsavo.trade.opportunity.cycle;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.xeiam.xchange.currency.CurrencyPair;
@@ -13,6 +12,8 @@ public class CurrencyCycle {
 	public CurrencyCycle(String aBaseSymbol) {
 		baseSymbol = aBaseSymbol;
 	}
+	
+	public BigDecimal balance;
 
 	public CurrencyCycle(String aBaseSymbol, CurrencyCycle aParentCycle) {
 		this(aBaseSymbol);
@@ -97,6 +98,6 @@ public class CurrencyCycle {
 	}
 
 	CurrencyCycle parentCycle;
-	String baseSymbol;
-	List<CurrencyCycle> counterSymbols = new ArrayList<CurrencyCycle>();
+	public String baseSymbol;
+	public List<CurrencyCycle> counterSymbols = new ArrayList<CurrencyCycle>();
 }

@@ -6,15 +6,13 @@ import java.util.stream.Collectors;
 import com.xeiam.xchange.currency.CurrencyPair;
 
 public class CycleFinder {
-	public static List<MarketCycle> findCycles(String baseCurrency,
+	public static CurrencyCycle findCurrencyCycle(String baseCurrency,
 			List<CurrencyPair> currencies) {
 
 		CurrencyCycle cycle = new CurrencyCycle(baseCurrency);
 		cycle.populateCycles(currencies, baseCurrency);
 
-		return cycle.GetAllLeaves().stream().map(y -> y.GetCurrencyCycle())
-				.filter(y -> y.size() > 3).map(y -> new MarketCycle(y))
-				.collect(Collectors.<MarketCycle> toList());
+		return cycle;
 	}
 
 	public static List<MarketCycle> findCycle(String baseCurrency,

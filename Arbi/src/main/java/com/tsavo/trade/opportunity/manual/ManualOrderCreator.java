@@ -336,7 +336,6 @@ public class ManualOrderCreator implements OpportunityFinder {
 
 	public BestExchangePrice getBestSellExchange(String aCurrency,
 			String aTransactionCurrency) {
-		CurrencyPair pair = new CurrencyPair(aCurrency, aTransactionCurrency);
 		Exchange bestExchange = null;
 		float highestPrice = Float.MIN_VALUE;
 		for (Exchange exchange : exchanges) {
