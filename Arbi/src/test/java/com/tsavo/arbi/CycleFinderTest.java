@@ -45,6 +45,7 @@ public class CycleFinderTest {
 		// add appender to any Logger (here is root)
 		Logger.getRootLogger().addAppender(console);
 		Cryptsy cryptsy = new Cryptsy();
+		System.out.println("Exchange loaded, " + cryptsy.currencyPairs.size() + " currency pairs found.");
 		CurrencyCycle cycles = CycleFinder.findCurrencyCycle(
 				"BTC",
 				cryptsy.currencyPairs);
@@ -72,7 +73,7 @@ public class CycleFinderTest {
 					.filter(x -> x.balance != null
 							&& x.balance.floatValue() > 1)
 					.collect(Collectors.<CurrencyCycle> toList());
-			System.out.println(viableCycles.size());
+			System.out.println(viableCycles.size() + " opportunities detected.");
 			viableCycles
 					.forEach(x -> System.out.println(x));
 		}
@@ -90,7 +91,7 @@ public class CycleFinderTest {
 
 		quantityLimits.put("BTC", 0.0001f);
 		quantityLimits.put("USD", 1f);
-		quantityLimits.put("XRP", 5000f);
+		quantityLimits.put("XRP", 1000f);
 		quantityLimits.put("LTC", 0.01f);
 		String baseCurrency = aCycle.baseSymbol;
 		for (CurrencyCycle cycle : aCycle.counterSymbols) {
@@ -124,8 +125,7 @@ public class CycleFinderTest {
 				}
 
 				cycle.balance = aCycle.balance.divide(order.get().getPrice(),
-						8, RoundingMode.HALF_DOWN).multiply(new
-													BigDecimal(0.99765));
+						8, RoundingMode.HALF_DOWN).multiply(new	BigDecimal(0.99765));
 				// limitOrders.add(new LimitOrder(OrderType.BID, actual
 				// .divide(order.get().getPrice(), 8,
 				// RoundingMode.HALF_DOWN).min(
@@ -146,8 +146,7 @@ public class CycleFinderTest {
 				if (!order.isPresent()) {
 					continue;
 				}
-				cycle.balance = aCycle.balance.multiply(order.get().getPrice()).multiply(new
-																				BigDecimal(0.99765));
+				cycle.balance = aCycle.balance.multiply(order.get().getPrice()).multiply(new BigDecimal(0.99765));
 				// limitOrders.add(new LimitOrder(OrderType.ASK, actual
 				// .min(order.get().getQuantity()), realPair,
 				// null, new Date(), order.get().getPrice()));

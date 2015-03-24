@@ -13,7 +13,7 @@ public class CurrencyCycle {
 	public CurrencyCycle(String aBaseSymbol) {
 		baseSymbol = aBaseSymbol;
 	}
-	
+
 	public BigDecimal balance;
 
 	public CurrencyCycle(String aBaseSymbol, CurrencyCycle aParentCycle) {
@@ -43,7 +43,6 @@ public class CurrencyCycle {
 
 	private CurrencyCycle findCycle(List<CurrencyPair> someCurrencyPairs,
 			String aCurrency, CurrencyCycle currentCycle, String rootCurrency) {
-
 
 		List<String> nexts = findNextInCycle(aCurrency, someCurrencyPairs);
 
@@ -102,25 +101,14 @@ public class CurrencyCycle {
 		}
 		return leaves;
 	}
-	
-	public CurrencyCycle isolateCycle(){
-		CurrencyCycle current = this;
-		while(current != null){
-			CurrencyCycle newCycle = new CurrencyCycle(current.baseSymbol, current.balance);
-			if(current.parentCycle != null){
-				current.parentCycle = new CurrencyCycle(current.parentCycle.baseSymbol, current.parentCycle.balance);
-				current.parentCycle.counterSymbols.add(current);
-			}
-			current = current.parentCycle;
-		}
-		return current;
-	}
-	
-	DecimalFormat format = new DecimalFormat("#.########");
+
+	static DecimalFormat format = new DecimalFormat("#.########");
 	@Override
 	public String toString() {
-		if(parentCycle != null){
-			return parentCycle.toString() + " -> " + baseSymbol + "(" + format.format(balance) + ")";
+
+		if (parentCycle != null) {
+			return parentCycle.toString() + " -> " + baseSymbol + "("
+					+ format.format(balance) + ")";
 		}
 		return baseSymbol + "(" + format.format(balance) + ")";
 	}
