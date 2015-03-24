@@ -12,10 +12,20 @@ public class CycleFinder {
 		CurrencyCycle cycle = new CurrencyCycle(baseCurrency);
 		cycle.populateCycles(currencies, baseCurrency);
 
-		return cycle.GetAllLeaves().stream()
-				.map(y -> y.GetCurrencyCycle())
-				.filter(y -> y.size() > 3)
-				.map(y -> new MarketCycle(y))
+		return cycle.GetAllLeaves().stream().map(y -> y.GetCurrencyCycle())
+				.filter(y -> y.size() > 3).map(y -> new MarketCycle(y))
 				.collect(Collectors.<MarketCycle> toList());
 	}
+
+	public static List<MarketCycle> findCycle(String baseCurrency,
+			String counterCurrency, List<CurrencyPair> currencies) {
+		CurrencyCycle cycle = new CurrencyCycle(baseCurrency);
+		cycle.populateCycles(currencies, counterCurrency);
+
+		return cycle.GetAllLeaves().stream()
+				.map(y -> new MarketCycle(y.GetCurrencyCycle()))
+				.collect(Collectors.<MarketCycle> toList());
+	}
+	
+	
 }
