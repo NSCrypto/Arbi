@@ -1,6 +1,7 @@
 package com.tsavo.trade.opportunity.cycle;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,6 +19,11 @@ public class CurrencyCycle {
 	public CurrencyCycle(String aBaseSymbol, CurrencyCycle aParentCycle) {
 		this(aBaseSymbol);
 		parentCycle = aParentCycle;
+	}
+
+	public CurrencyCycle(String baseSymbol2, BigDecimal balance2) {
+		baseSymbol = baseSymbol2;
+		balance = balance2;
 	}
 
 	public List<String> GetCurrencyCycle() {
@@ -95,6 +101,28 @@ public class CurrencyCycle {
 					.collect(Collectors.<CurrencyCycle> toSet()));
 		}
 		return leaves;
+	}
+	
+	public CurrencyCycle isolateCycle(){
+		CurrencyCycle current = this;
+		while(current != null){
+			CurrencyCycle newCycle = new CurrencyCycle(current.baseSymbol, current.balance);
+			if(current.parentCycle != null){
+				current.parentCycle = new CurrencyCycle(current.parentCycle.baseSymbol, current.parentCycle.balance);
+				current.parentCycle.counterSymbols.add(current);
+			}
+			current = current.parentCycle;
+		}
+		return current;
+	}
+	
+	DecimalFormat format = new DecimalFormat("#.########");
+	@Override
+	public String toString() {
+		if(parentCycle != null){
+			return parentCycle.toString() + " -> " + baseSymbol + "(" + format.format(balance) + ")";
+		}
+		return baseSymbol + "(" + format.format(balance) + ")";
 	}
 
 	CurrencyCycle parentCycle;

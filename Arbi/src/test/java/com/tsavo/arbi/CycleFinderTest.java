@@ -73,14 +73,8 @@ public class CycleFinderTest {
 							&& x.balance.floatValue() > 1)
 					.collect(Collectors.<CurrencyCycle> toList());
 			System.out.println(viableCycles.size());
-			DecimalFormat format = new DecimalFormat("#.##");
 			viableCycles
-					.forEach(x -> System.out.println(new MarketCycle(x
-							.GetCurrencyCycle()).toString()
-							+ " @ "
-							+ format.format((x.balance.subtract(new BigDecimal(
-									1)).multiply(new BigDecimal(100)))
-									.floatValue()) + "%"));
+					.forEach(x -> System.out.println(x));
 		}
 
 	}
@@ -88,16 +82,16 @@ public class CycleFinderTest {
 	public void putBalanceOnNext(CurrencyCycle aCycle,
 			Map<Integer, CryptsyPublicOrderbook> orders) {
 
-		Map<Integer, Integer> marketSubs = new HashMap();
+		Map<Integer, Integer> marketSubs = new HashMap<>();
 		marketSubs.put(464, 445);
 		marketSubs.put(441, 454);
 
 		Map<String, Float> quantityLimits = new HashMap<>();
 
-		quantityLimits.put("BTC", 0.000001f);
-		quantityLimits.put("USD", 0.8f);
-		quantityLimits.put("XRP", 1000f);
-		quantityLimits.put("LTC", 0.001f);
+		quantityLimits.put("BTC", 0.0001f);
+		quantityLimits.put("USD", 1f);
+		quantityLimits.put("XRP", 5000f);
+		quantityLimits.put("LTC", 0.01f);
 		String baseCurrency = aCycle.baseSymbol;
 		for (CurrencyCycle cycle : aCycle.counterSymbols) {
 			String counterCurrency = cycle.baseSymbol;
@@ -112,8 +106,6 @@ public class CycleFinderTest {
 					.convertToCurrencyPair(market);
 			CryptsyPublicOrderbook orderbook = orders.get(market);
 			if (orderbook == null) {
-				System.out.println("Missing orders for market " + baseCurrency
-						+ "/" + counterCurrency + "(" + market + ")");
 				continue;
 			}
 			if (realPair.baseSymbol.equals(baseCurrency)) {
