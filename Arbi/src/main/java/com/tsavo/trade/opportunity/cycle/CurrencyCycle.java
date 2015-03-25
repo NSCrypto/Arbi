@@ -3,10 +3,13 @@ package com.tsavo.trade.opportunity.cycle;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.xeiam.xchange.currency.CurrencyPair;
+import com.xeiam.xchange.dto.trade.LimitOrder;
 
 public class CurrencyCycle {
 
@@ -15,15 +18,21 @@ public class CurrencyCycle {
 	}
 
 	public BigDecimal balance;
+	//public BigDecimal actual;
+	//public BigDecimal previousActual;
+	//public LimitOrder limitOrder;
 
 	public CurrencyCycle(String aBaseSymbol, CurrencyCycle aParentCycle) {
 		this(aBaseSymbol);
 		parentCycle = aParentCycle;
 	}
 
-	public CurrencyCycle(String baseSymbol2, BigDecimal balance2) {
-		baseSymbol = baseSymbol2;
-		balance = balance2;
+	public CurrencyCycle(CurrencyCycle cycle) {
+		baseSymbol = cycle.baseSymbol;
+		balance = cycle.balance;
+		if (cycle.parentCycle != null) {
+			parentCycle = new CurrencyCycle(cycle.parentCycle);
+		}
 	}
 
 	public List<String> GetCurrencyCycle() {
@@ -35,16 +44,19 @@ public class CurrencyCycle {
 		return all;
 	}
 
-	public CurrencyCycle populateCycles(List<CurrencyPair> someCurrencyPairs,
-			String rootCurrency) {
+	public CurrencyCycle populateCycles(
+			Collection<CurrencyPair> someCurrencyPairs, String rootCurrency) {
 		findCycle(someCurrencyPairs, baseSymbol, this, rootCurrency);
 		return this;
 	}
 
-	private CurrencyCycle findCycle(List<CurrencyPair> someCurrencyPairs,
+	private CurrencyCycle findCycle(Collection<CurrencyPair> someCurrencyPairs,
 			String aCurrency, CurrencyCycle currentCycle, String rootCurrency) {
 
-		List<String> nexts = findNextInCycle(aCurrency, someCurrencyPairs);
+		if (currentCycle.GetCycleLength() > 7) {
+			return this;
+		}
+		Set<String> nexts = findNextInCycle(aCurrency, someCurrencyPairs);
 
 		for (String next : nexts) {
 			if (currentCycle.GetCurrencyCycle().contains(next)
@@ -67,20 +79,24 @@ public class CurrencyCycle {
 		return currentCycle;
 	}
 
-	private List<String> findNextInCycle(String aCurrency,
-			List<CurrencyPair> somePairs) {
+	private Set<String> findNextInCycle(String aCurrency,
+			Collection<CurrencyPair> somePairs) {
 		return somePairs
 				.stream()
 				.filter(x -> hasCurrency(x, aCurrency))
 				.map(x -> {
 					return x.baseSymbol.equals(aCurrency) ? x.counterSymbol
 							: x.baseSymbol;
-				}).collect(Collectors.<String> toList());
+				}).collect(Collectors.<String> toSet());
 	}
 
 	private boolean hasCurrency(CurrencyPair aPair, String aCurrency) {
 		return aPair.baseSymbol.equals(aCurrency)
 				|| aPair.counterSymbol.equals(aCurrency);
+	}
+
+	public CurrencyCycle isolateCycle() {
+		return new CurrencyCycle(this);
 	}
 
 	public int GetCycleLength() {
@@ -102,15 +118,20 @@ public class CurrencyCycle {
 		return leaves;
 	}
 
-	static DecimalFormat format = new DecimalFormat("#.########");
+	static DecimalFormat format = new DecimalFormat("###,###.########");
+
 	@Override
 	public String toString() {
 
+		String str = baseSymbol + "(" + format.format(balance.floatValue())
+				+ ")";
+		// if (previousActual != BigDecimal.ONE && previousActual != null) {
+		// str += format.format(previousActual);
+		// }
 		if (parentCycle != null) {
-			return parentCycle.toString() + " -> " + baseSymbol + "("
-					+ format.format(balance) + ")";
+			return parentCycle.toString() + " -> " + str;
 		}
-		return baseSymbol + "(" + format.format(balance) + ")";
+		return str;
 	}
 
 	CurrencyCycle parentCycle;

@@ -1,13 +1,15 @@
 package com.tsavo.trade.opportunity.cycle;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.xeiam.xchange.currency.CurrencyPair;
 
 public class CycleFinder {
 	public static CurrencyCycle findCurrencyCycle(String baseCurrency,
-			List<CurrencyPair> currencies) {
+			Collection<CurrencyPair> currencies) {
 
 		CurrencyCycle cycle = new CurrencyCycle(baseCurrency);
 		cycle.populateCycles(currencies, baseCurrency);
@@ -16,7 +18,7 @@ public class CycleFinder {
 	}
 
 	public static List<MarketCycle> findCycle(String baseCurrency,
-			String counterCurrency, List<CurrencyPair> currencies) {
+			String counterCurrency, Collection<CurrencyPair> currencies) {
 		CurrencyCycle cycle = new CurrencyCycle(baseCurrency);
 		cycle.populateCycles(currencies, counterCurrency);
 
