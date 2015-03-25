@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.xeiam.xchange.currency.CurrencyPair;
-import com.xeiam.xchange.dto.trade.LimitOrder;
 
 public class CurrencyCycle {
 

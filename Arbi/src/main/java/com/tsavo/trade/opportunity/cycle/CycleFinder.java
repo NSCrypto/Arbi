@@ -2,7 +2,6 @@ package com.tsavo.trade.opportunity.cycle;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.xeiam.xchange.currency.CurrencyPair;
