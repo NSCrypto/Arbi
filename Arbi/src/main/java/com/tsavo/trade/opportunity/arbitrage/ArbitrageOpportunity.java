@@ -2,12 +2,23 @@ package com.tsavo.trade.opportunity.arbitrage;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Function;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheBuilderSpec;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.MapMaker;
 import com.tsavo.trade.opportunity.Opportunity;
 import com.tsavo.trade.portfolio.Portfolio;
 import com.xeiam.xchange.Exchange;
@@ -25,6 +36,45 @@ public class ArbitrageOpportunity implements Opportunity {
 	LimitOrder ask;
 	float size;
 	CurrencyPair currencyPair;
+	private static LoadingCache<Exchange, LoadingCache<String, BigDecimal>> balanceCache = CacheBuilder
+			.newBuilder().concurrencyLevel(4).weakKeys()
+			.expireAfterWrite(20, TimeUnit.MINUTES)
+			.build(new CacheLoader<Exchange, LoadingCache<String, BigDecimal>>() {
+				@Override
+				public LoadingCache<String, BigDecimal> load(Exchange exchange)
+						throws Exception {
+					return CacheBuilder.newBuilder().concurrencyLevel(4)
+							.weakKeys().expireAfterWrite(20, TimeUnit.SECONDS)
+							.build(new CacheLoader<String, BigDecimal>() {
+								@Override
+								public BigDecimal load(String currency)
+										throws Exception {
+									try {
+										BigDecimal amount = exchange
+												.getPollingAccountService()
+												.getAccountInfo()
+												.getBalance(currency);
+										if(currency.equals("USD") && amount.floatValue() < 1){
+											return BigDecimal.ZERO;
+										}
+										if(amount.floatValue() < 0.0001){
+											return BigDecimal.ZERO;
+										}
+										return amount;
+									} catch (
+											ExchangeException
+											| NotAvailableFromExchangeException
+											| NotYetImplementedForExchangeException
+											| IOException e) {
+										// TODO Auto-generated
+										// catch block
+										e.printStackTrace();
+										return BigDecimal.ZERO;
+									}
+								}
+							});
+				}
+			});
 
 	public CurrencyPair getCurrencyPair() {
 		return currencyPair;
@@ -34,7 +84,9 @@ public class ArbitrageOpportunity implements Opportunity {
 		this.currencyPair = currencyPair;
 	}
 
-	public ArbitrageOpportunity(CurrencyPair aPair, Exchange anAskExchange, LimitOrder anAskOrder, Exchange aBidExchange, LimitOrder aBidOrder, float aSize) {
+	public ArbitrageOpportunity(CurrencyPair aPair, Exchange anAskExchange,
+			LimitOrder anAskOrder, Exchange aBidExchange, LimitOrder aBidOrder,
+			float aSize) {
 		currencyPair = aPair;
 		askExchange = anAskExchange;
 		bidExchange = aBidExchange;
@@ -91,24 +143,49 @@ public class ArbitrageOpportunity implements Opportunity {
 		this.size = size;
 	}
 
-	public void trade(BigDecimal anAmount, Portfolio aPortfolio) throws ExchangeException, NotAvailableFromExchangeException, NotYetImplementedForExchangeException, IOException {
+	public void trade(BigDecimal anAmount, Portfolio aPortfolio)
+			throws ExchangeException, NotAvailableFromExchangeException,
+			NotYetImplementedForExchangeException, IOException {
 		if (getPlaceToBuy().getPollingTradeService() == null) {
-			System.out.println("Can't trade at " + getPlaceToBuy().getExchangeSpecification().getExchangeName());
+			System.out.println("Can't trade at "
+					+ getPlaceToBuy().getExchangeSpecification()
+							.getExchangeName());
 			return;
 		}
 		if (getPlaceToSell().getPollingTradeService() == null) {
-			System.out.println("Can't trade at " + getPlaceToSell().getExchangeSpecification().getExchangeName());
+			System.out.println("Can't trade at "
+					+ getPlaceToSell().getExchangeSpecification()
+							.getExchangeName());
 			return;
 		}
-		getPlaceToBuy().getPollingTradeService().placeLimitOrder(new LimitOrder(OrderType.BID, anAmount, getAsk().getCurrencyPair(), null, new Date(), getAsk().getLimitPrice()));
-		getPlaceToSell().getPollingTradeService().placeLimitOrder(new LimitOrder(OrderType.ASK, anAmount, getBid().getCurrencyPair(), null, new Date(), getBid().getLimitPrice()));
-		float profit = anAmount.floatValue() * (getBid().getLimitPrice().floatValue() - getAsk().getLimitPrice().floatValue());
+		String order = getPlaceToBuy().getPollingTradeService().placeLimitOrder(new
+		LimitOrder(OrderType.BID, anAmount, getAsk().getCurrencyPair(), null,
+		new Date(), getAsk().getLimitPrice()));
+		try{getPlaceToSell().getPollingTradeService().placeLimitOrder(new
+		LimitOrder(OrderType.ASK, anAmount, getBid().getCurrencyPair(), null,
+		new Date(), getBid().getLimitPrice()));}
+		catch(Exception e){
+			getPlaceToBuy().getPollingTradeService().cancelOrder(order);
+			throw e;
+		}
+		float profit = anAmount.floatValue()
+				* (getBid().getLimitPrice().floatValue() - getAsk()
+						.getLimitPrice().floatValue());
 		DecimalFormat format = new DecimalFormat("#.########");
-		aPortfolio.addEarning(currencyPair, anAmount.floatValue(), getBid().getLimitPrice().add((getAsk().getLimitPrice())).divide(new BigDecimal(2)).floatValue());
-		System.out.println("We bought " + anAmount.floatValue() + " " + getAsk().getCurrencyPair().baseSymbol + " @ " + getPlaceToBuy().getExchangeSpecification().getExchangeName() + " for " + getAsk().getLimitPrice().toString() + " each, and sold them for " + getBid().getLimitPrice().toString() + " @ "
-				+ getPlaceToSell().getExchangeSpecification().getExchangeName() + " and in doing so made " + format.format(profit) + " " + getAsk().getCurrencyPair().counterSymbol + ".");
+		//aPortfolio.addEarning(currencyPair, anAmount.floatValue(),
+			//	getBid().getLimitPrice().add((getAsk().getLimitPrice()))
+					//	.divide(new BigDecimal(2)).floatValue());
+		System.out.println("We bought " + format.format(anAmount) + " "
+				+ getAsk().getCurrencyPair().baseSymbol + " @ "
+				+ getPlaceToBuy().getExchangeSpecification().getExchangeName()
+				+ " for " + format.format(getAsk().getLimitPrice())
+				+ " each, and sold them for "
+				+ format.format(getBid().getLimitPrice()) + " @ "
+				+ getPlaceToSell().getExchangeSpecification().getExchangeName()
+				+ " and in doing so made " + format.format(profit) + " "
+				+ getAsk().getCurrencyPair().counterSymbol + ".");
 		try {
-			Thread.sleep(60000);
+			Thread.sleep(20000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -117,8 +194,10 @@ public class ArbitrageOpportunity implements Opportunity {
 		return;
 		// voice.speak("We bought " + anAmount + " " +
 		// getAsk().getTradableIdentifier() + " at " +
-		// getPlaceToBuy().getExchangeSpecification().getExchangeName() + " for " +
-		// opp.getAsk().getLimitPrice().toString() + " each, and sold them for " +
+		// getPlaceToBuy().getExchangeSpecification().getExchangeName() +
+		// " for " +
+		// opp.getAsk().getLimitPrice().toString() + " each, and sold them for "
+		// +
 		// opp.getBid().getLimitPrice().toString() + " at "
 		// + placeToSell.getExchangeSpecification().getExchangeName() +
 		// " and in doing so made " + profit + " " +
@@ -127,29 +206,48 @@ public class ArbitrageOpportunity implements Opportunity {
 	}
 
 	public BigDecimal getAmountToTrade() {
-		if (getPlaceToBuy().getPollingAccountService() == null || getPlaceToSell().getPollingAccountService() == null) {
-			System.out.println("We can't check at " + (getPlaceToBuy().getPollingAccountService() == null ? getPlaceToBuy().getExchangeSpecification().getExchangeName() : getPlaceToSell().getExchangeSpecification().getExchangeName()) + " so skipping.");
+		if (getPlaceToBuy().getPollingAccountService() == null
+				|| getPlaceToSell().getPollingAccountService() == null) {
+			System.out
+					.println("We can't check at "
+							+ (getPlaceToBuy().getPollingAccountService() == null ? getPlaceToBuy()
+									.getExchangeSpecification()
+									.getExchangeName() : getPlaceToSell()
+									.getExchangeSpecification()
+									.getExchangeName()) + " so skipping.");
 			return BigDecimal.ZERO;
 		}
 		BigDecimal buyingBalence;
 		try {
-			buyingBalence = getPlaceToBuy().getPollingAccountService().getAccountInfo().getBalance(getAsk().getCurrencyPair().baseSymbol);
+			buyingBalence = balanceCache.get(getPlaceToBuy()).get(
+					getAsk().getCurrencyPair().counterSymbol).divide(getBid().getLimitPrice(), 8, RoundingMode.HALF_DOWN);
 		} catch (Exception e) {
-			System.out.println("Couldn't check balance at " + getPlaceToBuy().getExchangeSpecification().getExchangeName() + " so skipping the opportunity for now.");
+			System.out.println("Couldn't check balance at "
+					+ getPlaceToBuy().getExchangeSpecification()
+							.getExchangeName()
+					+ " so skipping the opportunity for now.");
 			e.printStackTrace();
 			return BigDecimal.ZERO;
 		}
 		BigDecimal sellingBalance;
 		try {
-			sellingBalance = getPlaceToSell().getPollingAccountService().getAccountInfo().getBalance(getAsk().getCurrencyPair().counterSymbol);
+			sellingBalance = balanceCache.get(getPlaceToSell()).get(
+					getAsk().getCurrencyPair().baseSymbol);
 		} catch (Exception e) {
-			System.out.println("Couldn't check balance at " + getPlaceToSell().getExchangeSpecification().getExchangeName() + " so skipping the opportunity for now.");
+			System.out.println("Couldn't check balance at "
+					+ getPlaceToSell().getExchangeSpecification()
+							.getExchangeName()
+					+ " so skipping the opportunity for now.");
 			e.printStackTrace();
 			return BigDecimal.ZERO;
 		}
-		BigDecimal amountToTrade = new BigDecimal(Math.min(Math.min(buyingBalence.floatValue() / getAsk().getLimitPrice().floatValue(), sellingBalance.floatValue()), Math.min(getAsk().getTradableAmount().floatValue(), getBid().getTradableAmount().floatValue())));
+		BigDecimal amountToTrade = new BigDecimal(Math.min(Math.min(
+				buyingBalence.floatValue(),
+				sellingBalance.floatValue()), Math.min(getAsk()
+				.getTradableAmount().floatValue(), getBid().getTradableAmount()
+				.floatValue())));
 
-		amountToTrade = new BigDecimal(Math.min(100, (int) amountToTrade.floatValue()));
+
 		return amountToTrade;
 	}
 
@@ -157,61 +255,88 @@ public class ArbitrageOpportunity implements Opportunity {
 		Set<String> suggestions = new HashSet<String>();
 		BigDecimal buyingBalence = BigDecimal.ZERO;
 		try {
-			buyingBalence = getPlaceToBuy().getPollingAccountService().getAccountInfo().getBalance(getAsk().getCurrencyPair().counterSymbol);
+			buyingBalence = balanceCache.get(getPlaceToBuy()).get(
+					getAsk().getCurrencyPair().counterSymbol);
 		} catch (Exception e) {
-			System.out.println("Couldn't check balance at " + getPlaceToBuy().getExchangeSpecification().getExchangeName() + " so skipping the opportunity for now.");
+			System.out.println("Couldn't check balance at "
+					+ getPlaceToBuy().getExchangeSpecification()
+							.getExchangeName()
+					+ " so skipping the opportunity for now.");
 			e.printStackTrace();
 		}
 
-		if (buyingBalence.floatValue() < .1 && !getCurrencyPair().counterSymbol.equals("USD")) {
+		if (buyingBalence.floatValue() < .1) {
 			float biggestPlace = 0;
 			Exchange bestExchangeSpecification = null;
 			for (Exchange ex : exchanges) {
 				try {
 
-						float bal;
-						if ((bal = ex.getPollingAccountService().getAccountInfo().getBalance(getAsk().getCurrencyPair().counterSymbol).floatValue()) > 0.1) {
-							biggestPlace = Math.max(biggestPlace, bal);
-							if (biggestPlace == bal) {
-								bestExchangeSpecification = ex;
-							}
+					float bal;
+					if ((bal = balanceCache.get(ex)
+							.get(getAsk().getCurrencyPair().counterSymbol)
+							.floatValue()) > 0.1) {
+						biggestPlace = Math.max(biggestPlace, bal);
+						if (biggestPlace == bal) {
+							bestExchangeSpecification = ex;
 						}
-					
+					}
+
 				} catch (Exception e) {
 				}
 			}
 			if (bestExchangeSpecification != null && biggestPlace > 0) {
-				suggestions.add("You should send some " + getAsk().getCurrencyPair().counterSymbol + " from " + bestExchangeSpecification.getExchangeSpecification().getExchangeName() + " to " + getAskExchange().getExchangeSpecification().getExchangeName() + ".");
+				suggestions.add("You should send some "
+						+ getAsk().getCurrencyPair().counterSymbol
+						+ " from "
+						+ bestExchangeSpecification.getExchangeSpecification()
+								.getExchangeName()
+						+ " to "
+						+ getAskExchange().getExchangeSpecification()
+								.getExchangeName() + ".");
 			}
 		}
 		BigDecimal sellingBalance = BigDecimal.ZERO;
 
 		try {
-			sellingBalance = getPlaceToSell().getPollingAccountService().getAccountInfo().getBalance(getAsk().getCurrencyPair().baseSymbol);
+			sellingBalance = balanceCache.get(getPlaceToSell()).get(
+					getAsk().getCurrencyPair().baseSymbol);
 		} catch (Exception e) {
-			System.out.println("Couldn't check balance at " + getPlaceToSell().getExchangeSpecification().getExchangeName() + " so skipping the opportunity for now.");
+			System.out.println("Couldn't check balance at "
+					+ getPlaceToSell().getExchangeSpecification()
+							.getExchangeName()
+					+ " so skipping the opportunity for now.");
 			e.printStackTrace();
 		}
-		if (sellingBalance.floatValue() < 1) {
+		if (sellingBalance.floatValue() < .1) {
 			float biggestPlace = 0;
 			Exchange bestExchangeSpecification = null;
 			for (Exchange ex : exchanges) {
 				try {
-						float bal;
-						if ((bal = ex.getPollingAccountService().getAccountInfo().getBalance(getAsk().getCurrencyPair().baseSymbol).floatValue()) > 0.1 && bal >= 1) {
-							biggestPlace = Math.max(biggestPlace, bal);
-							if (biggestPlace == bal) {
-								bestExchangeSpecification = ex;
-							}
-
+					float bal;
+					if ((bal = balanceCache.get(ex)
+							.get(getAsk().getCurrencyPair().baseSymbol)
+							.floatValue()) > 0.1
+							) {
+						biggestPlace = Math.max(biggestPlace, bal);
+						if (biggestPlace == bal) {
+							bestExchangeSpecification = ex;
 						}
-					
+
+					}
+
 				} catch (Exception e) {
 
 				}
 			}
-			if (bestExchangeSpecification != null && biggestPlace > 4) {
-				suggestions.add("You should send some " + getAsk().getCurrencyPair().baseSymbol + " from " + bestExchangeSpecification.getExchangeSpecification().getExchangeName() + " to " + getBidExchange().getExchangeSpecification().getExchangeName() + ".");
+			if (bestExchangeSpecification != null) {
+				suggestions.add("You should send some "
+						+ getAsk().getCurrencyPair().baseSymbol
+						+ " from "
+						+ bestExchangeSpecification.getExchangeSpecification()
+								.getExchangeName()
+						+ " to "
+						+ getBidExchange().getExchangeSpecification()
+								.getExchangeName() + ".");
 			}
 		}
 		return suggestions;

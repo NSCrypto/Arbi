@@ -38,8 +38,8 @@ public class Portfolio {
 	public ExchangeSpecification referenceExchangeSpecification;
 	// public Map<String, MovingAverage<WeightedSample>> tradedValue = new
 	// HashMap<>();
-	public double buyMultiplier = 0.96;
-	public double sellMultiplier = 1.08;
+	public double buyMultiplier = 1;
+	public double sellMultiplier = 1.0;
 
 	public Portfolio() {
 	}

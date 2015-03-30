@@ -3,6 +3,8 @@ package com.tsavo.arbi;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,16 +17,22 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.junit.Test;
 
-import com.tsavo.trade.CachingCryptsyOrderBook;
+import com.tsavo.trade.CachingOrderBook;
 import com.tsavo.trade.Cryptsy;
+import com.tsavo.trade.ExchangeLimitOrder;
 import com.tsavo.trade.opportunity.cycle.CurrencyCycle;
 import com.tsavo.trade.opportunity.cycle.CycleFinder;
+import com.xeiam.xchange.Exchange;
+import com.xeiam.xchange.ExchangeFactory;
+import com.xeiam.xchange.ExchangeSpecification;
+import com.xeiam.xchange.bitfinex.v1.BitfinexExchange;
+import com.xeiam.xchange.btce.v3.BTCEExchange;
 import com.xeiam.xchange.cryptsy.CryptsyCurrencyUtils;
-import com.xeiam.xchange.cryptsy.dto.marketdata.CryptsyPublicOrder;
-import com.xeiam.xchange.cryptsy.dto.marketdata.CryptsyPublicOrderbook;
 import com.xeiam.xchange.currency.CurrencyPair;
+import com.xeiam.xchange.okcoin.OkCoinExchange;
 
 public class CycleFinderTest {
+	List<Exchange> exchanges = new ArrayList<Exchange>();
 
 	@Test
 	public void testFindCycles() throws IOException {
@@ -47,56 +55,91 @@ public class CycleFinderTest {
 
 		System.out.println("Exchange loaded, " + cryptsy.currencyPairs.size()
 				+ " currency pairs found.");
-		CurrencyCycle cycles = CycleFinder.findCurrencyCycle("BTC",
-				cryptsy.currencyPairs);
-		System.out.println(cycles.GetAllLeaves().size()
-				+ " market cycles detected.");
+		CurrencyCycle cycles = CycleFinder.findCurrencyCycle("BTC", Arrays
+				.asList(new CurrencyPair("BTC", "USD"), new CurrencyPair("LTC",
+						"BTC"), new CurrencyPair("LTC", "USD"),
+						new CurrencyPair("XRP", "USD"), new CurrencyPair("XRP",
+								"BTC"), new CurrencyPair("DRK", "USD"),
+						new CurrencyPair("DRK", "BTC"), new CurrencyPair("DRK",
+								"LTC")));
+		CurrencyCycle usdcycles = CycleFinder.findCurrencyCycle("USD", Arrays
+				.asList(new CurrencyPair("BTC", "USD"), new CurrencyPair("LTC",
+						"BTC"), new CurrencyPair("LTC", "USD"),
+						new CurrencyPair("XRP", "USD"), new CurrencyPair("XRP",
+								"BTC"), new CurrencyPair("DRK", "USD"),
+						new CurrencyPair("DRK", "BTC"), new CurrencyPair("DRK",
+								"LTC")));
+
+		System.out.println((cycles.GetAllLeaves().size() + usdcycles
+				.GetAllLeaves().size()) + " market cycles detected.");
+		cryptsy.exchange.getExchangeSpecification().setApiKey(
+				"1948367b66763024000812b257c1c5907e1e36fb");
+		cryptsy.exchange
+				.getExchangeSpecification()
+				.setSecretKey(
+						"9c5baae0e58978fd7daa317ce2418980aae3ee0ed2dc623dbd78dfdd5ef319ff78b0f80a5a1a9178");
+
+		Exchange btce = ExchangeFactory.INSTANCE
+				.createExchange(BTCEExchange.class.getName());
+		ExchangeSpecification btceSpec = btce.getDefaultExchangeSpecification();
+		btceSpec.setApiKey("OIW7IED5-XTPBARNQ-78G66VT3-NOX4NY4T-CBPV070X");
+		btceSpec.setSecretKey("ccba84ce0908586fd2baa360e7da98d9cd5be4109a11cb8bab4269025652b834");
+
+		Exchange okcoin = ExchangeFactory.INSTANCE
+				.createExchange(OkCoinExchange.class.getName());
+		ExchangeSpecification okcoinSpec = okcoin
+				.getDefaultExchangeSpecification();
+		okcoinSpec.setExchangeSpecificParametersItem("Use_Intl", true);
+
+		// exchanges.add(ExchangeFactory.INSTANCE.createExchange(okcoinSpec));
+
+		Exchange bfx = ExchangeFactory.INSTANCE
+				.createExchange(BitfinexExchange.class.getName());
+
+		ExchangeSpecification bfxSpec = bfx.getDefaultExchangeSpecification();
+
+		bfxSpec.setApiKey("fqnmXJypz1WV5qGdxf9qPLEqYuhJ1l0BOVzJOBgz5y9");
+		bfxSpec.setSecretKey("7LaUvSp90XOoYkDM9mOf3vr7iwwhFuTcqfQs0VQxDdm");
+		exchanges.add(ExchangeFactory.INSTANCE.createExchange(bfxSpec));
+		// exchanges.add(ExchangeFactory.INSTANCE.createExchange(bter));
+		exchanges.add(ExchangeFactory.INSTANCE.createExchange(btceSpec));
+		exchanges.add(cryptsy.exchange);
+		List<CachingOrderBook> orderBooks = exchanges.stream()
+				.map(exchange -> new CachingOrderBook(exchange))
+				.collect(Collectors.<CachingOrderBook> toList());
 		while (true) {
-			Map<Integer, CryptsyPublicOrderbook> orders = null;
-			while (orders == null) {
-				try {
-					orders = cryptsy.GetOrders();
-				} catch (Exception e) {
-				}
-			}
-			orders = orders
-					.entrySet()
-					.stream()
-					.filter(x -> x.getValue().getBuyOrders() != null
-							&& x.getValue().getSellOrders() != null)
-					.collect(
-							Collectors.toMap(x -> x.getKey(), y -> y.getValue()));
-			Map<Integer, CachingCryptsyOrderBook> cachingOrders = new HashMap<Integer, CachingCryptsyOrderBook>();
-			orders.forEach((x, y) -> cachingOrders.put(
-					x,
-					new CachingCryptsyOrderBook(y,
-							quantityLimits.get(CryptsyCurrencyUtils
-									.convertToCurrencyPair(x).counterSymbol))));
-			System.out.println(orders.values().stream()
-					.flatMap(x -> x.getBuyOrders().stream()).count()
-					+ orders.values().stream()
-							.flatMap(x -> x.getSellOrders().stream()).count()
-					+ " orders loaded.");
+
 			cycles.balance = BigDecimal.ONE;
+			usdcycles.balance = BigDecimal.ONE;
 			// cycles.actual = BigDecimal.ONE;
 			// cycles.previousActual = BigDecimal.ONE;
-			putBalanceOnNext(cycles, cachingOrders);
+			putBalanceOnNext(cycles, orderBooks);
+			putBalanceOnNext(usdcycles, orderBooks);
+
 			List<CurrencyCycle> viableCycles = cycles
 					.GetAllLeaves()
 					.stream()
 					.filter(x -> x.balance != null
 							&& x.balance.floatValue() > 1)
 					.collect(Collectors.<CurrencyCycle> toList());
+			viableCycles.addAll(usdcycles
+					.GetAllLeaves()
+					.stream()
+					.filter(x -> x.balance != null
+							&& x.balance.floatValue() > 1)
+					.collect(Collectors.<CurrencyCycle> toList()));
+
 			System.out
 					.println(viableCycles.size() + " opportunities detected.");
 
-			viableCycles.forEach(x -> System.out.println(x));
+			viableCycles.forEach(x -> System.out.println(x + " " + x.getSize()
+					+ "%"));
 
 		}
 	}
 
 	public void putBalanceOnNext(CurrencyCycle aCycle,
-			Map<Integer, CachingCryptsyOrderBook> orders) {
+			List<CachingOrderBook> orderBooks) {
 
 		Map<Integer, Integer> marketSubs = new HashMap<>();
 		marketSubs.put(464, 445);
@@ -114,19 +157,35 @@ public class CycleFinderTest {
 			}
 			CurrencyPair realPair = CryptsyCurrencyUtils
 					.convertToCurrencyPair(market);
-			CachingCryptsyOrderBook orderbook = orders.get(market);
-			if (orderbook == null) {
-				continue;
+			if (realPair.baseSymbol.equals("DASH")) {
+				realPair = new CurrencyPair("DRK", realPair.counterSymbol);
 			}
+			if (realPair.counterSymbol.equals("DASH")) {
+				realPair = new CurrencyPair(realPair.baseSymbol, "DRK");
+			}
+			final CurrencyPair finalPair = realPair;
 			if (realPair.baseSymbol.equals(counterCurrency)) {
-				Optional<CryptsyPublicOrder> order = orderbook.lowestSell.get();
+
+				Optional<ExchangeLimitOrder> order = orderBooks
+						.stream()
+						.flatMap(x -> x.getSellOrders(finalPair).stream())
+						.collect(
+								Collectors.<ExchangeLimitOrder> minBy((x, y) -> {
+									return x.limitOrder.getLimitPrice()
+											.compareTo(
+													y.limitOrder
+															.getLimitPrice());
+								}));
+
 				if (!order.isPresent()) {
 					continue;
 				}
 
-				cycle.balance = aCycle.balance.divide(order.get().getPrice(),
-						8, RoundingMode.HALF_DOWN).multiply(
+				cycle.balance = aCycle.balance.divide(
+						order.get().limitOrder.getLimitPrice(), 8,
+						RoundingMode.HALF_DOWN).multiply(
 						new BigDecimal(0.99765));
+				cycle.exchangeLimitOrder = order.get();
 				// cycle.actual = aCycle.actual.divide(order.get().getPrice(),
 				// 8, RoundingMode.HALF_DOWN).multiply(new
 				// BigDecimal(0.99765)).min(order.get().getQuantity());
@@ -139,12 +198,23 @@ public class CycleFinderTest {
 				// null, new Date(), order.get().getPrice()));
 
 			} else {
-				Optional<CryptsyPublicOrder> order = orderbook.highestBuy.get();
+				Optional<ExchangeLimitOrder> order = orderBooks
+						.stream()
+						.flatMap(x -> x.getBuyOrders(finalPair).stream())
+						.collect(
+								Collectors.<ExchangeLimitOrder> maxBy((x, y) -> {
+									return x.limitOrder.getLimitPrice()
+											.compareTo(
+													y.limitOrder
+															.getLimitPrice());
+								}));
 				if (!order.isPresent()) {
 					continue;
 				}
-				cycle.balance = aCycle.balance.multiply(order.get().getPrice())
-						.multiply(new BigDecimal(0.99765));
+				cycle.balance = aCycle.balance.multiply(
+						order.get().limitOrder.getLimitPrice()).multiply(
+						new BigDecimal(0.99765));
+				cycle.exchangeLimitOrder = order.get();
 				// cycle.actual =
 				// aCycle.actual.multiply(order.get().getPrice()).multiply(new
 				// BigDecimal(0.99765));
@@ -158,7 +228,7 @@ public class CycleFinderTest {
 				// .min(order.get().getQuantity()), realPair,
 				// null, new Date(), order.get().getPrice()));
 			}
-			putBalanceOnNext(cycle, orders);
+			putBalanceOnNext(cycle, orderBooks);
 		}
 
 	}

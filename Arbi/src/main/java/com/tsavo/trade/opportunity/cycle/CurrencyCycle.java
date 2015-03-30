@@ -1,6 +1,7 @@
 package com.tsavo.trade.opportunity.cycle;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -8,7 +9,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.tsavo.trade.ExchangeLimitOrder;
+import com.xeiam.xchange.Exchange;
 import com.xeiam.xchange.currency.CurrencyPair;
+import com.xeiam.xchange.dto.trade.LimitOrder;
 
 public class CurrencyCycle {
 
@@ -52,7 +56,7 @@ public class CurrencyCycle {
 	private CurrencyCycle findCycle(Collection<CurrencyPair> someCurrencyPairs,
 			String aCurrency, CurrencyCycle currentCycle, String rootCurrency) {
 
-		if (currentCycle.GetCycleLength() > 7) {
+		if (currentCycle.GetCycleLength() > 5) {
 			return this;
 		}
 		Set<String> nexts = findNextInCycle(aCurrency, someCurrencyPairs);
@@ -116,6 +120,17 @@ public class CurrencyCycle {
 		}
 		return leaves;
 	}
+	
+	public List<ExchangeLimitOrder> GetExchangeLimitOrders(){
+		List<ExchangeLimitOrder> orders = new ArrayList<>();
+		if(this.parentCycle != null){
+			orders.addAll(parentCycle.GetExchangeLimitOrders());
+		}
+		if(exchangeLimitOrder != null){
+			orders.add(exchangeLimitOrder);
+		}
+		return orders;
+	}
 
 	static DecimalFormat format = new DecimalFormat("###,###.########");
 
@@ -128,12 +143,17 @@ public class CurrencyCycle {
 		// str += format.format(previousActual);
 		// }
 		if (parentCycle != null) {
-			return parentCycle.toString() + " -> " + str;
+			return parentCycle.toString() + " " + exchangeLimitOrder.exchange.getExchangeSpecification().getExchangeName() + "-> " + str;
 		}
 		return str;
 	}
 
+	public float getSize(){
+		return balance.subtract(BigDecimal.ONE).multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_DOWN).floatValue();
+	}
+	
 	CurrencyCycle parentCycle;
 	public String baseSymbol;
 	public List<CurrencyCycle> counterSymbols = new ArrayList<CurrencyCycle>();
+	public ExchangeLimitOrder exchangeLimitOrder;
 }

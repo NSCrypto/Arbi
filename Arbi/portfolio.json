@@ -1,0 +1,28 @@
+{
+  "holdingsReport" : { },
+  "earningsReport" : { },
+  "tickers" : { },
+  "exchangeSpecifications" : [ ],
+  "referenceExchangeSpecification" : {
+    "exchangeName" : "Cryptsy",
+    "exchangeDescription" : "Cryptsy is an altcoin exchange",
+    "userName" : null,
+    "password" : null,
+    "secretKey" : "9c5baae0e58978fd7daa317ce2418980aae3ee0ed2dc623dbd78dfdd5ef319ff78b0f80a5a1a9178",
+    "apiKey" : "1948367b66763024000812b257c1c5907e1e36fb",
+    "sslUri" : "https://api.cryptsy.com",
+    "plainTextUri" : null,
+    "sslUriStreaming" : null,
+    "plainTextUriStreaming" : null,
+    "host" : "api.cryptsy.com",
+    "port" : 80,
+    "metaDataJsonFileOverride" : null,
+    "exchangeClassName" : "com.xeiam.xchange.cryptsy.CryptsyExchange",
+    "exchangeSpecificParameters" : {
+      "KEY_PUBLIC_API_URL" : "http://pubapi.cryptsy.com",
+      "KEY_PUBLIC_API_HOST" : "pubapi.cryptsy.com"
+    }
+  },
+  "buyMultiplier" : 0.96,
+  "sellMultiplier" : 1.08
+}
