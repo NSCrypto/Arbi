@@ -57,6 +57,11 @@ public class CachingOrderBook {
 		lowerLimits.put("BTC", 10f);
 		lowerLimits.put("DRK", 1f);
 	}
+	
+	public void clearCache(){
+		buyOrders.invalidateAll();
+		sellOrders.invalidateAll();
+	}
 
 	public float getLowerLimit(String aCurrency) {
 		if (lowerLimits.containsKey(aCurrency)) {

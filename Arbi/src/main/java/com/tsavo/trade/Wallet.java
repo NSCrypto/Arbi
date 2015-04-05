@@ -21,7 +21,7 @@ public class Wallet {
 					@Override
 					public LoadingCache<String, BigDecimal> load(Exchange anExchange) throws Exception {
 						// TODO Auto-generated method stub
-						return CacheBuilder.newBuilder().concurrencyLevel(4).expireAfterWrite(2, TimeUnit.SECONDS).build(new CacheLoader<String, BigDecimal>() {
+						return CacheBuilder.newBuilder().concurrencyLevel(4).expireAfterWrite(4, TimeUnit.SECONDS).build(new CacheLoader<String, BigDecimal>() {
 							@Override
 							public BigDecimal load(String aCurrency) throws Exception {
 								try {
@@ -49,5 +49,8 @@ public class Wallet {
 		} catch (ExecutionException e) {
 			return BigDecimal.ZERO;
 		}
+	}
+	public void clearCache(){
+		wallets.invalidateAll();
 	}
 }

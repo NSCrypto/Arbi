@@ -31,6 +31,8 @@ public class OpportunityExecutor {
 					try {
 						System.out.println("Executing trade: " + opp);
 						opp.trade(me);
+						anIndex.clearCache();
+						aWallet.clearCache();
 					} catch (ExchangeException | NotAvailableFromExchangeException | NotYetImplementedForExchangeException | IOException e) {
 						e.printStackTrace();
 					}

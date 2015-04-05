@@ -2,8 +2,6 @@ package com.tsavo.trade;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -11,11 +9,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -32,7 +26,6 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
-import com.tsavo.trade.opportunity.Opportunity;
 import com.tsavo.trade.opportunity.OpportunityFinder;
 import com.tsavo.trade.opportunity.cycle.CycleOpportunityFinder;
 import com.tsavo.trade.opportunity.manual.ManualOrderCreator;
@@ -42,7 +35,6 @@ import com.xeiam.xchange.ExchangeFactory;
 import com.xeiam.xchange.ExchangeSpecification;
 import com.xeiam.xchange.bitfinex.v1.BitfinexExchange;
 import com.xeiam.xchange.btce.v3.BTCEExchange;
-import com.xeiam.xchange.bter.BTER;
 import com.xeiam.xchange.bter.BTERExchange;
 import com.xeiam.xchange.cryptsy.CryptsyExchange;
 import com.xeiam.xchange.currency.CurrencyPair;

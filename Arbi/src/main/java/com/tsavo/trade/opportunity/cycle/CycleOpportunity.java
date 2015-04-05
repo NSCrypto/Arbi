@@ -153,7 +153,7 @@ public class CycleOpportunity implements Opportunity {
 						+ order.limitOrder.getLimitPrice().multiply(tradeableAmount).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros() + " "
 						+ order.limitOrder.getCurrencyPair().counterSymbol + ") leaving us with " + tradeableAmount + " " + resultingCurrency + ".");
 				LimitOrder outorder = new LimitOrder(OrderType.BID, tradeableAmount, order.limitOrder.getCurrencyPair(), null, new Date(), order.limitOrder.getLimitPrice());
-				String id =	order.exchange.getPollingTradeService().placeLimitOrder(outorder);
+				order.exchange.getPollingTradeService().placeLimitOrder(outorder);
 			} else {
 				if(tradeableAmount == null){
 					BigDecimal amount;
@@ -181,7 +181,7 @@ public class CycleOpportunity implements Opportunity {
 						+ order.limitOrder.getLimitPrice().multiply(tradeableAmount).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros() + " "
 						+ order.limitOrder.getCurrencyPair().counterSymbol + ") leaving us with " +  tradeableAmount.multiply(order.limitOrder.getLimitPrice()).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros() + " " + resultingCurrency + ".");
 				LimitOrder outorder = new LimitOrder(OrderType.ASK, tradeableAmount, order.limitOrder.getCurrencyPair(), null, new Date(), order.limitOrder.getLimitPrice());
-				String id =	order.exchange.getPollingTradeService().placeLimitOrder(outorder);
+				order.exchange.getPollingTradeService().placeLimitOrder(outorder);
 				tradeableAmount = tradeableAmount.multiply(order.limitOrder.getLimitPrice()).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros();
 
 			}

@@ -11,18 +11,15 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tsavo.trade.PriceIndex;
 import com.tsavo.trade.Wallet;
 import com.xeiam.xchange.Exchange;
-import com.xeiam.xchange.ExchangeSpecification;
-import com.xeiam.xchange.currency.CurrencyPair;
 import com.xeiam.xchange.dto.account.AccountInfo;
 import com.xeiam.xchange.exceptions.ExchangeException;
 import com.xeiam.xchange.exceptions.NotAvailableFromExchangeException;
@@ -30,20 +27,29 @@ import com.xeiam.xchange.exceptions.NotYetImplementedForExchangeException;
 
 public class Portfolio {
 
+	public transient PriceIndex priceIndex;
+	public transient Wallet wallet;
+	public List<Position> openPositions = Collections.synchronizedList(new ArrayList<Position>());
+	public List<Position> closedPositions = Collections.synchronizedList(new ArrayList<Position>());
 
-	public SortedMap<CurrencyPair, EarningsReport> earningsReport = Collections.synchronizedSortedMap(new TreeMap<CurrencyPair, EarningsReport>());
-	public SortedMap<String, SortedMap<CurrencyPair, TickerData>> tickers = Collections.synchronizedSortedMap(new TreeMap<String, SortedMap<CurrencyPair, TickerData>>());
+	public List<Position> getOpenPositions() {
+		return openPositions;
+	}
 
-	public List<ExchangeSpecification> exchangeSpecifications = new ArrayList<>();
+	public void setOpenPositions(List<Position> openPositions) {
+		this.openPositions = Collections.synchronizedList(openPositions);
+	}
 
-	public ExchangeSpecification referenceExchangeSpecification;
-	// public Map<String, MovingAverage<WeightedSample>> tradedValue = new
-	// HashMap<>();
-	public double buyMultiplier = 1;
-	public double sellMultiplier = 1.0;
+	public List<Position> getClosedPositions() {
+		return closedPositions;
+	}
 
-	public PriceIndex priceIndex;
-	public Wallet wallet;
+	public void setClosedPositions(List<Position> closedPositions) {
+		this.closedPositions = Collections.synchronizedList(closedPositions);
+	}
+
+	public Portfolio() {
+	}
 
 	public Portfolio(PriceIndex anIndex, Wallet aWallet) {
 		priceIndex = anIndex;
@@ -102,20 +108,28 @@ public class Portfolio {
 
 	}
 
-	
-	public SortedMap<String, SortedMap<CurrencyPair, TickerData>> getTickers() {
-		return tickers;
+	public void enterPosition(Position aPosition) throws ExchangeException, NotAvailableFromExchangeException, NotYetImplementedForExchangeException, IOException {
+		synchronized (openPositions) {
+			aPosition.enter(priceIndex, wallet);
+			openPositions.add(aPosition);
+			save();
+		}
 	}
 
-	public void setTickers(SortedMap<String, SortedMap<CurrencyPair, TickerData>> tickers) {
-		this.tickers = tickers;
-	}
-
-	public List<ExchangeSpecification> getExchangeSpecifications() {
-		return exchangeSpecifications;
-	}
-
-	public void setExchangeSpecifications(List<ExchangeSpecification> exchangeSpecifications) {
-		this.exchangeSpecifications = exchangeSpecifications;
+	public void exitCompleteOpenPositions() throws ExchangeException, NotAvailableFromExchangeException, NotYetImplementedForExchangeException, IOException {
+		synchronized (openPositions) {
+			synchronized (closedPositions) {
+				Iterator<Position> i = openPositions.iterator();
+				while (i.hasNext()) {
+					Position position = i.next();
+					if (position.isAtExit(priceIndex)) {
+						position.exit(priceIndex, wallet);
+						i.remove();
+						closedPositions.add(position);
+					}
+				}
+				save();
+			}
+		}
 	}
 }

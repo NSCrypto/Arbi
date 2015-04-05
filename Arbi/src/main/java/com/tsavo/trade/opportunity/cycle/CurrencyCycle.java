@@ -155,12 +155,13 @@ public class CurrencyCycle {
 	}
 
 	public float getSize() {
-		return balance.subtract(BigDecimal.ONE).multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_DOWN).floatValue();
+		return balance.subtract(BigDecimal.ONE).multiply(new BigDecimal(100)).setScale(4, RoundingMode.HALF_DOWN).floatValue();
 	}
 
 	public void populateCycle(PriceIndex aPriceIndex, OpportunityExecutor anExecutor) {
 
 		for (CurrencyCycle cycle : counterSymbols) {
+			cycle.balance = null;
 			String counterCurrency = cycle.baseSymbol;
 
 			int market = CryptsyCurrencyUtils.convertToMarketId(new CurrencyPair(baseSymbol, counterCurrency));
@@ -187,7 +188,7 @@ public class CurrencyCycle {
 			}
 			cycle.populateCycle(aPriceIndex, anExecutor);
 		}
-		if(isLeaf() && balance != null && balance.floatValue() > 1.0001){
+		if(isLeaf() && balance != null && getSize() > .001f){
 			anExecutor.executeOpportunity(new CycleOpportunity(this));
 		}
 	}

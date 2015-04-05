@@ -112,7 +112,7 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 				Plot plot = new Plot(currency);
 				plot.priceSeries.setMaximumItemCount(4500);
 
-				Map<CurrencyPair, TickerData> map = portfolio.getTickers().get(exchange.getExchangeSpecification().getExchangeName());
+				Map<CurrencyPair, TickerData> map =null;// portfolio.getTickers().get(exchange.getExchangeSpecification().getExchangeName());
 				int count = 0;
 				if (map != null) {
 					TickerData data = map.get(currency);
@@ -166,10 +166,10 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 					continue;
 				}
 				Date current = ticker.getTimestamp();
-				SortedMap<CurrencyPair, TickerData> currencyTickers = portfolio.tickers.get(exchange.getExchangeSpecification().getExchangeName());
+				SortedMap<CurrencyPair, TickerData> currencyTickers = null;//portfolio.tickers.get(exchange.getExchangeSpecification().getExchangeName());
 				if (currencyTickers == null) {
 					currencyTickers = Collections.synchronizedSortedMap(new TreeMap<CurrencyPair, TickerData>());
-					portfolio.tickers.put(exchange.getExchangeSpecification().getExchangeName(), currencyTickers);
+					//portfolio.tickers.put(exchange.getExchangeSpecification().getExchangeName(), currencyTickers);
 				}
 				TickerData data = currencyTickers.get(currency);
 				if (data == null) {
