@@ -24,19 +24,16 @@ public class Cryptsy {
 		cryptsy.setApiKey("1948367b66763024000812b257c1c5907e1e36fb");
 		cryptsy.setSecretKey("9c5baae0e58978fd7daa317ce2418980aae3ee0ed2dc623dbd78dfdd5ef319ff78b0f80a5a1a9178");
 
-		exchange = (CryptsyExchange) ExchangeFactory.INSTANCE
-				.createExchange(cryptsy);
+		exchange = (CryptsyExchange) ExchangeFactory.INSTANCE.createExchange(cryptsy);
 
+		marketDataService = (CryptsyPublicMarketDataService) exchange.getPollingPublicMarketDataService();
 
-		marketDataService = (CryptsyPublicMarketDataService) exchange
-				.getPollingPublicMarketDataService();
-
-		currencyPairs = marketDataService.getExchangeSymbols().stream().collect(Collectors.<CurrencyPair>toSet());;
+		currencyPairs = marketDataService.getExchangeSymbols().stream().collect(Collectors.<CurrencyPair> toSet());
+		;
 	}
 
-	public Map<Integer, CryptsyPublicOrderbook> GetOrders()
-			throws ExchangeException, IOException {
+	public Map<Integer, CryptsyPublicOrderbook> GetOrders() throws ExchangeException, IOException {
 		return marketDataService.getAllCryptsyOrderBooks();
 	}
-	
+
 }

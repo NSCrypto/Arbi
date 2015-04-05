@@ -29,6 +29,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.ui.ApplicationFrame;
 import org.jfree.ui.RefineryUtilities;
 
+import com.tsavo.trade.OpportunityExecutor;
 import com.tsavo.trade.opportunity.Opportunity;
 import com.tsavo.trade.opportunity.OpportunityFinder;
 import com.tsavo.trade.portfolio.Portfolio;
@@ -150,9 +151,9 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 
 	}
 
-	public List<Opportunity> findOpportunities() throws ExchangeException, NotAvailableFromExchangeException, NotYetImplementedForExchangeException, IOException {
+	public void findOpportunities(OpportunityExecutor anExecutor) throws ExchangeException, NotAvailableFromExchangeException, NotYetImplementedForExchangeException, IOException {
 		if (lastRun + DELAY > System.currentTimeMillis()) {
-			return new ArrayList<Opportunity>();
+			return;
 		}
 		lastRun = System.currentTimeMillis();
 		List<Opportunity> opps = new ArrayList<Opportunity>();
@@ -196,7 +197,9 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 			}
 		}
 		portfolio.save();
-		return opps;
-	};
+		return;
+	}
+
+	
 
 }
