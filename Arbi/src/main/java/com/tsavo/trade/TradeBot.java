@@ -123,7 +123,14 @@ public class TradeBot {
 			OpportunityExecutor executor = new OpportunityExecutor(index, wallet);
 
 			new CycleOpportunityFinder("BTC", Arrays.asList(new CurrencyPair("BTC", "USD"), new CurrencyPair("LTC", "BTC"), new CurrencyPair("LTC", "USD"), new CurrencyPair("DRK",
-					"USD"), new CurrencyPair("DRK", "BTC"), new CurrencyPair("PPC", "BTC"), new CurrencyPair("PPC", "USD")), index, wallet).findOpportunities(executor);
+					"USD"), new CurrencyPair("DRK", "BTC")), index, wallet).findOpportunities(executor);
+			new CycleOpportunityFinder("USD", Arrays.asList(new CurrencyPair("BTC", "USD"), new CurrencyPair("LTC", "BTC"), new CurrencyPair("LTC", "USD"), new CurrencyPair("DRK",
+					"USD"), new CurrencyPair("DRK", "BTC")), index, wallet).findOpportunities(executor);
+			new CycleOpportunityFinder("LTC", Arrays.asList(new CurrencyPair("BTC", "USD"), new CurrencyPair("LTC", "BTC"), new CurrencyPair("LTC", "USD"), new CurrencyPair("DRK",
+					"USD"), new CurrencyPair("DRK", "BTC")), index, wallet).findOpportunities(executor);
+			new CycleOpportunityFinder("DRK", Arrays.asList(new CurrencyPair("BTC", "USD"), new CurrencyPair("LTC", "BTC"), new CurrencyPair("LTC", "USD"), new CurrencyPair("DRK",
+					"USD"), new CurrencyPair("DRK", "BTC")), index, wallet).findOpportunities(executor);
+
 			new ManualOrderCreator(portfolio).findOpportunities(executor);
 
 		}

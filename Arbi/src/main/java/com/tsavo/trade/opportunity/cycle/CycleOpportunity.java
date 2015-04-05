@@ -29,8 +29,6 @@ public class CycleOpportunity implements Opportunity {
 
 	@Override
 	public boolean canTrade(PriceIndex aPriceIndex, Wallet aWallet) {
-		// TODO Auto-generated method stub
-
 		String resultingCurrency = null;
 		BigDecimal tradeableAmount = null;
 		for (ExchangeLimitOrder order : cycle.GetExchangeLimitOrders()) {
@@ -38,7 +36,7 @@ public class CycleOpportunity implements Opportunity {
 				if(tradeableAmount == null){
 					BigDecimal amount;
 					switch(order.limitOrder.getCurrencyPair().baseSymbol){
-						case "BTC": amount = new BigDecimal(0.1); break;
+						case "BTC": amount = new BigDecimal(0.02); break;
 						case "LTC": amount = new BigDecimal(5); break;
 						case "DRK": amount = new BigDecimal(5); break;
 						default : amount = new BigDecimal(5);
@@ -72,7 +70,7 @@ public class CycleOpportunity implements Opportunity {
 				if(tradeableAmount == null){
 					BigDecimal amount;
 					switch(order.limitOrder.getCurrencyPair().baseSymbol){
-						case "BTC": amount = new BigDecimal(0.1); break;
+						case "BTC": amount = new BigDecimal(0.02); break;
 						case "LTC": amount = new BigDecimal(5); break;
 						case "DRK": amount = new BigDecimal(5); break;
 						default : amount = new BigDecimal(5);
@@ -131,7 +129,7 @@ public class CycleOpportunity implements Opportunity {
 				if(tradeableAmount == null){
 					BigDecimal amount;
 					switch(order.limitOrder.getCurrencyPair().baseSymbol){
-						case "BTC": amount = new BigDecimal(0.1); break;
+						case "BTC": amount = new BigDecimal(0.02); break;
 						case "LTC": amount = new BigDecimal(5); break;
 						case "DRK": amount = new BigDecimal(5); break;
 						default : amount = new BigDecimal(5);
@@ -155,13 +153,12 @@ public class CycleOpportunity implements Opportunity {
 						+ order.limitOrder.getLimitPrice().multiply(tradeableAmount).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros() + " "
 						+ order.limitOrder.getCurrencyPair().counterSymbol + ") leaving us with " + tradeableAmount + " " + resultingCurrency + ".");
 				LimitOrder outorder = new LimitOrder(OrderType.BID, tradeableAmount, order.limitOrder.getCurrencyPair(), null, new Date(), order.limitOrder.getLimitPrice());
-				String id =
-				order.exchange.getPollingTradeService().placeLimitOrder(outorder);
+				String id =	order.exchange.getPollingTradeService().placeLimitOrder(outorder);
 			} else {
 				if(tradeableAmount == null){
 					BigDecimal amount;
 					switch(order.limitOrder.getCurrencyPair().baseSymbol){
-						case "BTC": amount = new BigDecimal(0.1); break;
+						case "BTC": amount = new BigDecimal(0.02); break;
 						case "LTC": amount = new BigDecimal(5); break;
 						case "DRK": amount = new BigDecimal(5); break;
 						default : amount = new BigDecimal(5);
@@ -184,8 +181,7 @@ public class CycleOpportunity implements Opportunity {
 						+ order.limitOrder.getLimitPrice().multiply(tradeableAmount).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros() + " "
 						+ order.limitOrder.getCurrencyPair().counterSymbol + ") leaving us with " +  tradeableAmount.multiply(order.limitOrder.getLimitPrice()).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros() + " " + resultingCurrency + ".");
 				LimitOrder outorder = new LimitOrder(OrderType.ASK, tradeableAmount, order.limitOrder.getCurrencyPair(), null, new Date(), order.limitOrder.getLimitPrice());
-				String id =
-				order.exchange.getPollingTradeService().placeLimitOrder(outorder);
+				String id =	order.exchange.getPollingTradeService().placeLimitOrder(outorder);
 				tradeableAmount = tradeableAmount.multiply(order.limitOrder.getLimitPrice()).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros();
 
 			}

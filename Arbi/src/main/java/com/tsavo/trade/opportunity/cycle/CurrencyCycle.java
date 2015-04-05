@@ -187,7 +187,7 @@ public class CurrencyCycle {
 			}
 			cycle.populateCycle(aPriceIndex, anExecutor);
 		}
-		if(isLeaf() && balance != null && balance.floatValue() > 1.001){
+		if(isLeaf() && balance != null && balance.floatValue() > 1.0001){
 			anExecutor.executeOpportunity(new CycleOpportunity(this));
 		}
 	}
