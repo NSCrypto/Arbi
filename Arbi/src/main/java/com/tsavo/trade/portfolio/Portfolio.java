@@ -73,7 +73,7 @@ public class Portfolio {
 				buffer.flush();
 				file.flush();
 				file.close();
-				// file.getFD().sync();
+				//file.getFD().sync();
 			}
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -131,5 +131,10 @@ public class Portfolio {
 				save();
 			}
 		}
+	}
+
+	public void clearCache() {
+		wallet.clearCache();
+		priceIndex.clearCache();
 	}
 }

@@ -22,7 +22,7 @@ public class CachingOrderBook {
 	public Exchange exchange;
 	public Map<String, Float> lowerLimits = new HashMap<>();
 
-	private LoadingCache<CurrencyPair, List<LimitOrder>> buyOrders = CacheBuilder.newBuilder().concurrencyLevel(4).expireAfterWrite(4, TimeUnit.SECONDS)
+	private LoadingCache<CurrencyPair, List<LimitOrder>> buyOrders = CacheBuilder.newBuilder().concurrencyLevel(4).expireAfterWrite(7, TimeUnit.SECONDS)
 			.build(new CacheLoader<CurrencyPair, List<LimitOrder>>() {
 				@Override
 				public List<LimitOrder> load(CurrencyPair key) throws Exception {
@@ -37,7 +37,7 @@ public class CachingOrderBook {
 				}
 			});
 
-	private LoadingCache<CurrencyPair, List<LimitOrder>> sellOrders = CacheBuilder.newBuilder().concurrencyLevel(4).expireAfterWrite(4, TimeUnit.SECONDS)
+	private LoadingCache<CurrencyPair, List<LimitOrder>> sellOrders = CacheBuilder.newBuilder().concurrencyLevel(4).expireAfterWrite(7, TimeUnit.SECONDS)
 			.build(new CacheLoader<CurrencyPair, List<LimitOrder>>() {
 				@Override
 				public List<LimitOrder> load(CurrencyPair key) throws Exception {

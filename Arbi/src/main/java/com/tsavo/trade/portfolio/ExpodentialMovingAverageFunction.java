@@ -10,7 +10,6 @@ public class ExpodentialMovingAverageFunction extends WeightedMovingAverageFunct
 	float weight = 0.8f;
 
 	public ExpodentialMovingAverageFunction() {
-		// TODO Auto-generated constructor stub
 	}
 
 	public ExpodentialMovingAverageFunction(int aWeight) {

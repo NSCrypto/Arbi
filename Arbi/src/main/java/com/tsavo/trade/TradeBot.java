@@ -82,10 +82,10 @@ public class TradeBot {
 
 			Exchange bfx = ExchangeFactory.INSTANCE.createExchange(BitfinexExchange.class.getName());
 
-			ExchangeSpecification bfxSpec = bfx.getDefaultExchangeSpecification();
+			ExchangeSpecification bitfinexSpec = bfx.getDefaultExchangeSpecification();
 
-			bfxSpec.setApiKey("fqnmXJypz1WV5qGdxf9qPLEqYuhJ1l0BOVzJOBgz5y9");
-			bfxSpec.setSecretKey("7LaUvSp90XOoYkDM9mOf3vr7iwwhFuTcqfQs0VQxDdm");
+			bitfinexSpec.setApiKey("fqnmXJypz1WV5qGdxf9qPLEqYuhJ1l0BOVzJOBgz5y9");
+			bitfinexSpec.setSecretKey("7LaUvSp90XOoYkDM9mOf3vr7iwwhFuTcqfQs0VQxDdm");
 
 			Exchange kraken = ExchangeFactory.INSTANCE.createExchange(KrakenExchange.class.getName());
 			kraken.getExchangeSpecification().setApiKey("U65ezt/UHp1l61CNTRchqz9gP8ApTGBonTK53M7xBh5CEp2FrCLxsAWE");
@@ -103,25 +103,25 @@ public class TradeBot {
 			bter.getExchangeSpecification().setApiKey("6B8C5A04-2FBF-4643-AE67-616D0066A412");
 			bter.getExchangeSpecification().setSecretKey("63d5c7892f0831d8d04a9af8ddaefeb498ec0822edcf8b47073689f3783d2ee8");
 
-			exchanges.add(ExchangeFactory.INSTANCE.createExchange(bfxSpec));
+			exchanges.add(ExchangeFactory.INSTANCE.createExchange(bitfinexSpec));
 			//exchanges.add(bter);
-			//exchanges.add(ExchangeFactory.INSTANCE.createExchange(btceSpec));
+			exchanges.add(ExchangeFactory.INSTANCE.createExchange(btceSpec));
 			Exchange referenceExchange = ExchangeFactory.INSTANCE.createExchange(cryptsy);
-			//exchanges.add(referenceExchange);
-
+			exchanges.add(referenceExchange);
+			new Cryptsy();
 			Wallet wallet = new Wallet(exchanges);
 			PriceIndex index = new PriceIndex(exchanges);
 			Portfolio portfolio = new Portfolio(index, wallet);
-			OpportunityExecutor executor = new OpportunityExecutor(index, wallet);
+			OpportunityExecutor executor = new OpportunityExecutor(portfolio);
 
 			new CycleOpportunityFinder("BTC", Arrays.asList(new CurrencyPair("BTC", "USD"), new CurrencyPair("LTC", "BTC"), new CurrencyPair("LTC", "USD"), new CurrencyPair("DRK",
-					"USD"), new CurrencyPair("DRK", "BTC")), index, wallet).findOpportunities(executor);
+					"USD"), new CurrencyPair("DRK", "BTC")), portfolio).findOpportunities(executor);
 			new CycleOpportunityFinder("USD", Arrays.asList(new CurrencyPair("BTC", "USD"), new CurrencyPair("LTC", "BTC"), new CurrencyPair("LTC", "USD"), new CurrencyPair("DRK",
-					"USD"), new CurrencyPair("DRK", "BTC")), index, wallet).findOpportunities(executor);
+					"USD"), new CurrencyPair("DRK", "BTC")), portfolio).findOpportunities(executor);
 			new CycleOpportunityFinder("LTC", Arrays.asList(new CurrencyPair("BTC", "USD"), new CurrencyPair("LTC", "BTC"), new CurrencyPair("LTC", "USD"), new CurrencyPair("DRK",
-					"USD"), new CurrencyPair("DRK", "BTC")), index, wallet).findOpportunities(executor);
+					"USD"), new CurrencyPair("DRK", "BTC")), portfolio).findOpportunities(executor);
 			new CycleOpportunityFinder("DRK", Arrays.asList(new CurrencyPair("BTC", "USD"), new CurrencyPair("LTC", "BTC"), new CurrencyPair("LTC", "USD"), new CurrencyPair("DRK",
-					"USD"), new CurrencyPair("DRK", "BTC")), index, wallet).findOpportunities(executor);
+					"USD"), new CurrencyPair("DRK", "BTC")), portfolio).findOpportunities(executor);
 
 			new ManualOrderCreator(portfolio).findOpportunities(executor);
 

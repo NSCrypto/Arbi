@@ -12,6 +12,7 @@ import com.tsavo.trade.OpportunityExecutor;
 import com.tsavo.trade.PriceIndex;
 import com.tsavo.trade.Wallet;
 import com.tsavo.trade.opportunity.Opportunity;
+import com.tsavo.trade.portfolio.Portfolio;
 import com.xeiam.xchange.Exchange;
 import com.xeiam.xchange.dto.Order.OrderType;
 import com.xeiam.xchange.dto.trade.LimitOrder;
@@ -24,11 +25,11 @@ public class CycleOpportunity implements Opportunity {
 	public CurrencyCycle cycle;
 
 	public CycleOpportunity(CurrencyCycle cycle) {
-		this.cycle = cycle;
+		this.cycle = cycle.isolateCycle();
 	}
 
 	@Override
-	public boolean canTrade(PriceIndex aPriceIndex, Wallet aWallet) {
+	public boolean canTrade(Portfolio aPortfolio) {
 		String resultingCurrency = null;
 		BigDecimal tradeableAmount = null;
 		for (ExchangeLimitOrder order : cycle.GetExchangeLimitOrders()) {
@@ -56,9 +57,9 @@ public class CycleOpportunity implements Opportunity {
 				
 				
 				resultingCurrency = order.limitOrder.getCurrencyPair().baseSymbol;
-				if (aWallet.getBalance(order.exchange, order.limitOrder.getCurrencyPair().counterSymbol).floatValue() < sellableAmount.floatValue()) {
+				if (aPortfolio.wallet.getBalance(order.exchange, order.limitOrder.getCurrencyPair().counterSymbol).floatValue() < sellableAmount.floatValue()) {
 					System.out.println("Opportunity skipped because of lack of liquidity on " + order.exchange.getExchangeSpecification().getExchangeName() + ". We have "
-							+ aWallet.getBalance(order.exchange, order.limitOrder.getCurrencyPair().counterSymbol) + " " + order.limitOrder.getCurrencyPair().counterSymbol
+							+ aPortfolio.wallet.getBalance(order.exchange, order.limitOrder.getCurrencyPair().counterSymbol) + " " + order.limitOrder.getCurrencyPair().counterSymbol
 							+ " but we need " + sellableAmount + " to complete the trade.");
 					return false;
 				}
@@ -92,7 +93,7 @@ public class CycleOpportunity implements Opportunity {
 					System.out.println("Opportunity skipped because volume insufficent.");
 					return false;
 				}
-				BigDecimal balance = aWallet.getBalance(order.exchange, order.limitOrder.getCurrencyPair().baseSymbol);
+				BigDecimal balance = aPortfolio.wallet.getBalance(order.exchange, order.limitOrder.getCurrencyPair().baseSymbol);
 				if (balance.floatValue() < tradeableAmount.floatValue()) {
 					System.out.println("Opportunity skipped because of lack of liquidity on " + order.exchange.getExchangeSpecification().getExchangeName() + ". We have "
 							+ balance + " " + order.limitOrder.getCurrencyPair().baseSymbol
@@ -190,7 +191,7 @@ public class CycleOpportunity implements Opportunity {
 	}
 
 	@Override
-	public Set<String> getSuggestions(Wallet aWallet) {
+	public Set<String> getSuggestions(Portfolio aPortfolio) {
 		Set<String> suggestions = new HashSet<>();
 
 		for (ExchangeLimitOrder order : cycle.GetExchangeLimitOrders()) {
@@ -204,9 +205,9 @@ public class CycleOpportunity implements Opportunity {
 			if (amount.floatValue() < 0.1) {
 				float biggestPlace = 0;
 				Exchange bestExchangeSpecification = null;
-				for (Exchange ex : aWallet.exchanges) {
+				for (Exchange ex : aPortfolio.wallet.exchanges) {
 
-					float bal = aWallet.getBalance(ex,
+					float bal = aPortfolio.wallet.getBalance(ex,
 							order.limitOrder.getType() == OrderType.ASK ? order.limitOrder.getCurrencyPair().counterSymbol : order.limitOrder.getCurrencyPair().baseSymbol)
 							.floatValue();
 					biggestPlace = Math.max(biggestPlace, bal);

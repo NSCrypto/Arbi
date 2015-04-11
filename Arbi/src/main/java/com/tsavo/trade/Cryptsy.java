@@ -19,7 +19,7 @@ public class Cryptsy {
 	public CryptsyPublicMarketDataService marketDataService;
 	public CryptsyExchange exchange;
 
-	public Cryptsy() throws IOException {
+	public Cryptsy() {
 		ExchangeSpecification cryptsy = new ExchangeSpecification(CryptsyExchange.class);
 		cryptsy.setApiKey("1948367b66763024000812b257c1c5907e1e36fb");
 		cryptsy.setSecretKey("9c5baae0e58978fd7daa317ce2418980aae3ee0ed2dc623dbd78dfdd5ef319ff78b0f80a5a1a9178");
@@ -28,8 +28,12 @@ public class Cryptsy {
 
 		marketDataService = (CryptsyPublicMarketDataService) exchange.getPollingPublicMarketDataService();
 
-		currencyPairs = marketDataService.getExchangeSymbols().stream().collect(Collectors.<CurrencyPair> toSet());
-		;
+		try {
+			currencyPairs = marketDataService.getExchangeSymbols().stream().collect(Collectors.<CurrencyPair> toSet());
+		} catch (IOException e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
+		
 	}
 
 	public Map<Integer, CryptsyPublicOrderbook> GetOrders() throws ExchangeException, IOException {

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, include = JsonTypeInfo.As.PROPERTY, property = "class")
-public class MovingAverage<T extends Sample> {
+public class MovingAverage<T extends Sample> implements Sampler<T> {
 
 	public List<T> window = new ArrayList<T>();
 	public AverageFunction<T> averageFunction;
@@ -24,6 +24,7 @@ public class MovingAverage<T extends Sample> {
 		averageFunction = aFunction;
 	}
 
+	@Override
 	public void addSample(T aSample) {
 		while (window.size() > windowSize) {
 			window.remove(window.size() - 1);

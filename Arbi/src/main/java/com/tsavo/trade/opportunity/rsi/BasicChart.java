@@ -40,7 +40,6 @@ public class BasicChart extends ApplicationFrame implements TickerListener {
 		RefineryUtilities.centerFrameOnScreen(this);
 		setVisible(true);
 		aTicker.addListener(this);
-		// TODO Auto-generated constructor stub
 	}
 
 	private JFreeChart createCombinedChart(TickerData aTicker, String aName) {
@@ -82,8 +81,10 @@ public class BasicChart extends ApplicationFrame implements TickerListener {
 		final XYPlot subplot1 = new XYPlot(collection, null, rangeAxis1, renderer1);
 
 		final long ONE_DAY = 24 * 60 * 60 * 1000;
+		final long ONE_HOUR = 60 * 60 * 1000;
+		final long ONE_MINUTE = 60 * 1000;
 		XYLineAndShapeRenderer maRenderer = new XYLineAndShapeRenderer(true, false);
-		XYDataset maSataset = MovingAverage.createMovingAverage(collection, " MA", 30 * ONE_DAY, 0);
+		XYDataset maSataset = MovingAverage.createMovingAverage(collection, " MA", ONE_MINUTE*5, 0);
 		subplot1.setRenderer(1, maRenderer);
 		subplot1.setDataset(1, maSataset);
 

@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import com.tsavo.trade.ExchangeLimitOrder;
 import com.tsavo.trade.OpportunityExecutor;
 import com.tsavo.trade.PriceIndex;
+import com.tsavo.trade.portfolio.Portfolio;
 import com.xeiam.xchange.cryptsy.CryptsyCurrencyUtils;
 import com.xeiam.xchange.currency.CurrencyPair;
 
@@ -47,6 +48,7 @@ public class CurrencyCycle {
 	public CurrencyCycle(CurrencyCycle cycle) {
 		baseSymbol = cycle.baseSymbol;
 		balance = cycle.balance;
+		exchangeLimitOrder = cycle.exchangeLimitOrder;
 		if (cycle.parentCycle != null) {
 			parentCycle = new CurrencyCycle(cycle.parentCycle);
 		}
@@ -155,13 +157,16 @@ public class CurrencyCycle {
 	}
 
 	public float getSize() {
-		return balance.subtract(BigDecimal.ONE).multiply(new BigDecimal(100)).setScale(4, RoundingMode.HALF_DOWN).floatValue();
+		if (balance == null) {
+			return 0f;
+		}
+		return balance.subtract(BigDecimal.ONE).multiply(new BigDecimal(100)).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros().floatValue();
 	}
 
-	public void populateCycle(PriceIndex aPriceIndex, OpportunityExecutor anExecutor) {
+	public void populateCycle(Portfolio aPortfolio, OpportunityExecutor anExecutor) {
 
 		for (CurrencyCycle cycle : counterSymbols) {
-			cycle.balance = null;
+			//cycle.balance = null;
 			String counterCurrency = cycle.baseSymbol;
 
 			int market = CryptsyCurrencyUtils.convertToMarketId(new CurrencyPair(baseSymbol, counterCurrency));
@@ -176,19 +181,18 @@ public class CurrencyCycle {
 				realPair = new CurrencyPair(realPair.baseSymbol, "DRK");
 			}
 			if (realPair.baseSymbol.equals(counterCurrency)) {
-				ExchangeLimitOrder order = aPriceIndex.getLowestSellPrice(realPair);
+				ExchangeLimitOrder order = aPortfolio.priceIndex.getLowestSellPrice(realPair);
 				cycle.balance = balance.divide(order.limitOrder.getLimitPrice(), 8, RoundingMode.HALF_DOWN).multiply(new BigDecimal(0.998));
 				cycle.exchangeLimitOrder = order;
 
 			} else {
-				ExchangeLimitOrder order = aPriceIndex.getHighestBuyPrice(realPair);
+				ExchangeLimitOrder order = aPortfolio.priceIndex.getHighestBuyPrice(realPair);
 				cycle.balance = balance.multiply(order.limitOrder.getLimitPrice()).multiply(new BigDecimal(0.998));
 				cycle.exchangeLimitOrder = order;
-
 			}
-			cycle.populateCycle(aPriceIndex, anExecutor);
+			cycle.populateCycle(aPortfolio, anExecutor);
 		}
-		if(isLeaf() && balance != null && getSize() > .001f){
+		if (isLeaf() && getSize() > .001f) {
 			anExecutor.executeOpportunity(new CycleOpportunity(this));
 		}
 	}

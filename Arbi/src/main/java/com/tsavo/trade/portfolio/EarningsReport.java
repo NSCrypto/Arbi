@@ -8,9 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class EarningsReport implements Serializable {
 
-	/**
-	 * 
-	 */
+	
 	private static final long serialVersionUID = -134463260612228231L;
 	List<Float> earnings = new ArrayList<Float>();
 

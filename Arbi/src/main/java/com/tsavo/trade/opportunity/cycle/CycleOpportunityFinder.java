@@ -1,27 +1,22 @@
 package com.tsavo.trade.opportunity.cycle;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 
-import com.tsavo.trade.Cryptsy;
+import org.apache.commons.lang3.time.StopWatch;
+
 import com.tsavo.trade.OpportunityExecutor;
-import com.tsavo.trade.PriceIndex;
-import com.tsavo.trade.Wallet;
 import com.tsavo.trade.opportunity.OpportunityFinder;
+import com.tsavo.trade.portfolio.Portfolio;
 import com.xeiam.xchange.currency.CurrencyPair;
 
 public class CycleOpportunityFinder implements OpportunityFinder {
 
-	PriceIndex priceIndex;
 	CurrencyCycle cycles;
-	CurrencyCycle usdcycles;
-	Wallet wallet;
+	Portfolio portfolio;
 
-	public CycleOpportunityFinder(String aBaseCurrency, List<CurrencyPair> somePairs, PriceIndex aPriceIndex, Wallet aWallet) throws IOException {
-		new Cryptsy();
-		priceIndex = aPriceIndex;
-		wallet = aWallet;
+	public CycleOpportunityFinder(String aBaseCurrency, List<CurrencyPair> somePairs, Portfolio aPortfolio) {
+		portfolio = aPortfolio;
 		cycles = CycleFinder.findCurrencyCycle(aBaseCurrency, somePairs);
 	}
 
@@ -31,8 +26,17 @@ public class CycleOpportunityFinder implements OpportunityFinder {
 			@Override
 			public void run() {
 				while (true) {
+					StopWatch watch = new StopWatch();
+					watch.start();
 					cycles.balance = BigDecimal.ONE;
-					cycles.populateCycle(priceIndex, anExecutor);
+					cycles.populateCycle(portfolio, anExecutor);
+					watch.split();
+					System.out.println("Opportunity cycle " + cycles.baseSymbol + " completed in " + watch.toSplitString() + ".");
+					try {
+						Thread.sleep(4000);
+					} catch (InterruptedException e) {
+						return;
+					}
 				}
 			}
 		};
