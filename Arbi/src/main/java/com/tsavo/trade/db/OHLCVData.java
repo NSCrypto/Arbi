@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
 import com.xeiam.xchange.dto.marketdata.Trade;
 
 public class OHLCVData implements Comparable<OHLCVData> {
@@ -41,6 +43,7 @@ public class OHLCVData implements Comparable<OHLCVData> {
 
 	@Override
 	public String toString() {
-		return "Date: " + startDate + ", Length: " + length + ", Open: " + open + ", High: " + high + ", Low: " + low + ", Close: " + close + ", Volume: " + volume;
+		return new ToStringBuilder(this).append("Date", startDate).append("Length", length).append("Open", open).append("High", high).append("Low", low).append("Close", close)
+				.append("Volume", volume).toString();
 	}
 }

@@ -13,7 +13,7 @@ import com.xeiam.xchange.dto.marketdata.Trade;
 
 public class TickerDatabase {
 
-	static DB db = DBMaker.newFileDB(new File("d:\\traderbot\\db.mapdb")).closeOnJvmShutdown().cacheLRUEnable().asyncWriteEnable().compressionEnable().make();
+	static DB db = DBMaker.newFileDB(new File("d:\\traderbot\\db.mapdb")).readOnly().closeOnJvmShutdown().cacheLRUEnable().compressionEnable().make();
 	static volatile boolean running = true;
 	ConcurrentNavigableMap<CurrencyPair, SortedSet<Trade>> map;
 	public String exchangeName;
@@ -23,50 +23,12 @@ public class TickerDatabase {
 		map = db.getTreeMap(anExchangeName);
 	}
 
-	static {
-		Thread cleaner = new Thread("Database compactor") {
-			@Override
-			public void run() {
-				while (running) {
-					try {
-						Thread.sleep(1000 * 60);
-					} catch (InterruptedException e) {
-						return;
-					}
-					db.compact();
-				}
-			}
-		};
-		cleaner.setDaemon(true);
-		cleaner.start();
-	}
-
-	public void put(CurrencyPair aPair, Trade anOrder) {
-		SortedSet<Trade> orders = map.get(aPair);
-		if (orders == null) {
-			orders = new TreeSet<Trade>();
-		}
-		orders.add(anOrder);
-		map.put(aPair, orders);
-		db.commit();
-	}
-
 	public SortedSet<Trade> get(CurrencyPair aPair) {
-		return map.get(aPair);
-	}
-
-	public void putAll(SortedSet<Trade> aList) {
-		aList.forEach(trade -> {
-			SortedSet<Trade> orders = map.get(trade.getCurrencyPair());
-			if (orders == null) {
-				orders = new TreeSet<Trade>();
-			}
-			orders.add(trade);
-			map.put(trade.getCurrencyPair(), orders);
-		});
-		if (aList.size() > 0) {
-			db.commit();
+		if (!map.containsKey(aPair)) {
+			return new TreeSet<>();
 		}
+		return new TreeSet<>(map.get(aPair));
+
 	}
 
 	public static void close() {
