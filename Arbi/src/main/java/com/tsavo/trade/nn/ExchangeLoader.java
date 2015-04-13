@@ -11,8 +11,8 @@ import org.encog.ml.data.market.TickerSymbol;
 import org.encog.ml.data.market.loader.LoadedMarketData;
 import org.encog.ml.data.market.loader.MarketLoader;
 
+import com.tsavo.hippo.LiveTickerReader;
 import com.tsavo.hippo.OHLCVData;
-import com.tsavo.trade.LiveTickerReader;
 import com.xeiam.xchange.currency.CurrencyPair;
 
 public class ExchangeLoader implements MarketLoader {
