@@ -21,6 +21,7 @@ public class Position {
 		LONG, SHORT
 	};
 
+	public String id;
 	public CurrencyPair currencyPair;
 	public float entryPosition;
 	public float exitPosition;
@@ -28,11 +29,13 @@ public class Position {
 	public float size;
 	public boolean armed = false;
 	public String exchangeName;
-	public float actualExitPosition;
 	public Disposition disposition;
+	public long entryTimestamp = -1;
+	public long exitTimestamp = -1;
 
-	public Position(Disposition aDisposition, CurrencyPair currencyPair, float entryPosition, float exitPosition, float stopLoss, float aSize, String anExchangeName) {
+	public Position(String anId, Disposition aDisposition, CurrencyPair currencyPair, float entryPosition, float exitPosition, float stopLoss, float aSize, String anExchangeName, boolean isArmed) {
 		super();
+		id = anId;
 		disposition = aDisposition;
 		this.currencyPair = currencyPair;
 		this.entryPosition = entryPosition;
@@ -40,6 +43,19 @@ public class Position {
 		this.stopLoss = stopLoss;
 		this.size = aSize;
 		this.exchangeName = anExchangeName;
+		this.armed = isArmed;
+	}
+
+	public Position(String anId,Disposition aDisposition, CurrencyPair currencyPair, float entryPosition, float exitPosition, float stopLoss, float aSize, String anExchangeName, boolean isArmed,
+			long anEntryTimestamp) {
+		this(anId, aDisposition, currencyPair, entryPosition, exitPosition, stopLoss, aSize, anExchangeName, isArmed);
+		entryTimestamp = anEntryTimestamp;
+	}
+
+	public Position(String anId,Disposition aDisposition, CurrencyPair currencyPair, float entryPosition, float exitPosition, float stopLoss, float aSize, String anExchangeName, boolean isArmed,
+			long anEntryTimestamp, long anExitTimestamp) {
+		this(anId, aDisposition, currencyPair, entryPosition, exitPosition, stopLoss, aSize, anExchangeName, isArmed, anEntryTimestamp);
+		exitTimestamp = anExitTimestamp;
 	}
 
 	public void enter(PriceIndex anIndex, Wallet aWallet) throws ExchangeException, NotAvailableFromExchangeException, NotYetImplementedForExchangeException, IOException {
@@ -68,10 +84,11 @@ public class Position {
 				order.exchange.getPollingTradeService().placeLimitOrder(buyOrder);
 				anIndex.clearCache();
 				aWallet.clearCache();
-			}else{
+			} else {
 				System.out.println("...but the order isn't armed so the trade won't actually go through.");
 			}
 		}
+		this.entryTimestamp = new Date().getTime();
 	}
 
 	public void exit(PriceIndex anIndex, Wallet aWallet) throws ExchangeException, NotAvailableFromExchangeException, NotYetImplementedForExchangeException, IOException {
@@ -95,15 +112,16 @@ public class Position {
 					.getLimitPrice().setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros());
 			System.out.println("Entering " + disposition + " position of " + size + " " + order.limitOrder.getCurrencyPair() + " @ " + order.limitOrder.getLimitPrice() + " ("
 					+ order.exchange.getExchangeSpecification().getExchangeName() + ")");
-			actualExitPosition = order.limitOrder.getLimitPrice().floatValue();
+			exitPosition = order.limitOrder.getLimitPrice().floatValue();
 			if (isArmed()) {
 				order.exchange.getPollingTradeService().placeLimitOrder(buyOrder);
 				anIndex.clearCache();
 				aWallet.clearCache();
-			}else{
+			} else {
 				System.out.println("...but the order isn't armed so the trade won't actually go through.");
 			}
 		}
+		this.exitTimestamp = new Date().getTime();
 	}
 
 	public boolean isAtExit(PriceIndex anIndex) {

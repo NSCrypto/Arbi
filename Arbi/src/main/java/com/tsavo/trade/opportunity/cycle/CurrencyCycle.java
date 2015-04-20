@@ -74,7 +74,7 @@ public class CurrencyCycle {
 
 	private CurrencyCycle findCycle(Collection<CurrencyPair> someCurrencyPairs, String aCurrency, CurrencyCycle currentCycle, String rootCurrency) {
 
-		if (currentCycle.GetCycleLength() > 5) {
+		if (currentCycle.GetCycleLength() > 6) {
 			return this;
 		}
 		Set<String> nexts = findNextInCycle(aCurrency, someCurrencyPairs);
@@ -192,7 +192,7 @@ public class CurrencyCycle {
 			}
 			cycle.populateCycle(aPortfolio, anExecutor);
 		}
-		if (isLeaf() && getSize() > .001f) {
+		if (isLeaf() && getSize() > 0.05f) {
 			anExecutor.executeOpportunity(new CycleOpportunity(this));
 		}
 	}

@@ -3,6 +3,9 @@ package com.tsavo.trade;
 import java.io.IOException;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import javax.speech.AudioException;
+import javax.speech.EngineException;
+
 import com.tsavo.trade.opportunity.Opportunity;
 import com.tsavo.trade.portfolio.Portfolio;
 import com.xeiam.xchange.exceptions.ExchangeException;
@@ -18,6 +21,7 @@ public class OpportunityExecutor {
 		Thread t = new Thread("Opportunity Executor") {
 			@Override
 			public void run() {
+				SpeechSynthesizer speech = new SpeechSynthesizer();
 				while (true) {
 					Opportunity opp;
 					try {
@@ -33,9 +37,22 @@ public class OpportunityExecutor {
 					try {
 						System.out.println("Executing trade: " + opp);
 						opp.trade(me);
+						speech.speak("Executing trade: " + opp);
 						aPortfolio.clearCache();
 
 					} catch (ExchangeException | NotAvailableFromExchangeException | NotYetImplementedForExchangeException | IOException e) {
+						e.printStackTrace();
+					} catch (EngineException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (AudioException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IllegalArgumentException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 

@@ -4,7 +4,6 @@ import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import org.encog.engine.network.activation.ActivationStep;
 import org.encog.engine.network.activation.ActivationTANH;
 import org.encog.ml.CalculateScore;
 import org.encog.ml.data.MLData;
@@ -13,23 +12,31 @@ import org.encog.ml.data.market.MarketDataDescription;
 import org.encog.ml.data.market.MarketDataType;
 import org.encog.ml.data.market.MarketMLDataSet;
 import org.encog.ml.data.market.loader.MarketLoader;
+import org.encog.ml.ea.opp.CompoundOperator;
+import org.encog.ml.ea.opp.selection.TruncationSelection;
 import org.encog.ml.ea.train.basic.TrainEA;
-import org.encog.neural.neat.NEATNetwork;
+import org.encog.neural.hyperneat.HyperNEATCODEC;
+import org.encog.neural.neat.NEATCODEC;
 import org.encog.neural.neat.NEATPopulation;
-import org.encog.neural.neat.NEATUtil;
+import org.encog.neural.neat.training.opp.NEATCrossover;
+import org.encog.neural.neat.training.opp.NEATMutateAddLink;
+import org.encog.neural.neat.training.opp.NEATMutateAddNode;
+import org.encog.neural.neat.training.opp.NEATMutateRemoveLink;
+import org.encog.neural.neat.training.opp.NEATMutateWeights;
+import org.encog.neural.neat.training.opp.links.MutatePerturbLinkWeight;
+import org.encog.neural.neat.training.opp.links.MutateResetLinkWeight;
+import org.encog.neural.neat.training.opp.links.SelectFixed;
+import org.encog.neural.neat.training.opp.links.SelectProportion;
+import org.encog.neural.neat.training.species.OriginalNEATSpeciation;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.training.TrainingSetScore;
-import org.encog.neural.networks.training.propagation.Propagation;
-import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
 import org.encog.neural.pattern.FeedForwardPattern;
-import org.encog.util.Format;
 import org.encog.util.simple.EncogUtility;
 import org.encog.util.time.TimeUnit;
 import org.junit.Test;
 
 import com.tsavo.hippo.LiveTickerReader;
 import com.tsavo.trade.nn.Config;
-import com.tsavo.trade.nn.ExchangeLoader;
 
 public class EncogTest {
 
@@ -48,7 +55,7 @@ public class EncogTest {
 	public void test() {
 
 		LiveTickerReader ticker = new LiveTickerReader("BitFinex");
-		MarketLoader loader = new ExchangeLoader(ticker, 1000 * 60 * 25);
+		MarketLoader loader = null;//new ExchangeLoader(ticker, 1000 * 60 * 60);
 		MarketMLDataSet market = new MarketMLDataSet(loader, Config.INPUT_WINDOW, Config.PREDICT_WINDOW);
 		MarketDataDescription desc = new MarketDataDescription(Config.TICKER, MarketDataType.ADJUSTED_CLOSE, true, true);
 		market.addDescription(desc);
@@ -78,24 +85,89 @@ public class EncogTest {
 		BasicNetwork network = (BasicNetwork) pattern.generate();
 		network.reset();
 
-		NEATPopulation pop = new NEATPopulation(market.getInputSize(), market.getIdealSize(), 250);
+		NEATPopulation pop = new NEATPopulation(market.getInputSize(), market.getIdealSize(), 100);
 		pop.setNEATActivationFunction(new ActivationTANH());
 		pop.setInitialConnectionDensity(1.0);
 		pop.reset();
 		CalculateScore score = new TrainingSetScore(market);
 
 		
-		TrainEA t = NEATUtil.constructNEATTrainer(pop, score);
-		EncogUtility.trainToError(t, 0.0000001);
-		NEATPopulation n = (NEATPopulation) t.getMethod();
+		final TrainEA result = new TrainEA(pop, score);
+		result.setSpeciation(new OriginalNEATSpeciation());
+
+		result.setSelection(new TruncationSelection(result, 0.3));
+		final CompoundOperator weightMutation = new CompoundOperator();
+		weightMutation.getComponents().add(
+				0.1125,
+				new NEATMutateWeights(new SelectFixed(1),
+						new MutatePerturbLinkWeight(0.02)));
+		weightMutation.getComponents().add(
+				0.1125,
+				new NEATMutateWeights(new SelectFixed(2),
+						new MutatePerturbLinkWeight(0.02)));
+		weightMutation.getComponents().add(
+				0.1125,
+				new NEATMutateWeights(new SelectFixed(3),
+						new MutatePerturbLinkWeight(0.02)));
+		weightMutation.getComponents().add(
+				0.1125,
+				new NEATMutateWeights(new SelectProportion(0.02),
+						new MutatePerturbLinkWeight(0.02)));
+		weightMutation.getComponents().add(
+				0.1125,
+				new NEATMutateWeights(new SelectFixed(1),
+						new MutatePerturbLinkWeight(1)));
+		weightMutation.getComponents().add(
+				0.1125,
+				new NEATMutateWeights(new SelectFixed(2),
+						new MutatePerturbLinkWeight(1)));
+		weightMutation.getComponents().add(
+				0.1125,
+				new NEATMutateWeights(new SelectFixed(3),
+						new MutatePerturbLinkWeight(1)));
+		weightMutation.getComponents().add(
+				0.1125,
+				new NEATMutateWeights(new SelectProportion(0.02),
+						new MutatePerturbLinkWeight(1)));
+		weightMutation.getComponents().add(
+				0.03,
+				new NEATMutateWeights(new SelectFixed(1),
+						new MutateResetLinkWeight()));
+		weightMutation.getComponents().add(
+				0.03,
+				new NEATMutateWeights(new SelectFixed(2),
+						new MutateResetLinkWeight()));
+		weightMutation.getComponents().add(
+				0.03,
+				new NEATMutateWeights(new SelectFixed(3),
+						new MutateResetLinkWeight()));
+		weightMutation.getComponents().add(
+				0.01,
+				new NEATMutateWeights(new SelectProportion(0.02),
+						new MutateResetLinkWeight()));
+		weightMutation.getComponents().finalizeStructure();
+
+		result.setChampMutation(weightMutation);
+		result.addOperation(0.5, new NEATCrossover());
+		result.addOperation(0.494, weightMutation);
+		result.addOperation(0.05, new NEATMutateAddNode());
+		result.addOperation(0.05, new NEATMutateAddLink());
+		result.addOperation(0.05, new NEATMutateRemoveLink());
+		result.getOperators().finalizeStructure();
+
+		if (pop.isHyperNEAT()) {
+			result.setCODEC(new HyperNEATCODEC());
+		} else {
+			result.setCODEC(new NEATCODEC());
+		}
+		EncogUtility.trainToError(result, 0.0000122);
+		NEATPopulation n = (NEATPopulation) result.getMethod();
 		
 
 		long start = System.currentTimeMillis();
 		
 
-		Propagation train = new ResilientPropagation(network, market);
-		train.setThreadCount(0);
-
+		
 //		do {
 //			train.iteration();
 //

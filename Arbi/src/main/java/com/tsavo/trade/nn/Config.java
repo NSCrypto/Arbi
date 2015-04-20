@@ -40,7 +40,7 @@ public class Config {
 	public static final int TRAINING_MINUTES = 1;
 	public static final int HIDDEN1_COUNT = 200;
 	public static final int HIDDEN2_COUNT = 50;
-	public static final int INPUT_WINDOW = 60;
-	public static final int PREDICT_WINDOW = 3;
+	public static final int INPUT_WINDOW = 10;
+	public static final int PREDICT_WINDOW = 1;
 	public static final TickerSymbol TICKER = new TickerSymbol("BTC/USD");
 }

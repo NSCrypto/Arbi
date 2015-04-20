@@ -1,15 +1,11 @@
 package com.tsavo.trade.opportunity.rsi;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -28,16 +24,16 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.ui.ApplicationFrame;
 import org.jfree.ui.RefineryUtilities;
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
 
+import com.tsavo.hippo.ExponentialWeightedMovingAverageFunction;
+import com.tsavo.hippo.LiveTickerReader;
+import com.tsavo.hippo.OHLCVData;
+import com.tsavo.hippo.OHLCVDataSet;
 import com.tsavo.trade.OpportunityExecutor;
-import com.tsavo.trade.opportunity.Opportunity;
 import com.tsavo.trade.opportunity.OpportunityFinder;
-import com.tsavo.trade.portfolio.Portfolio;
-import com.tsavo.trade.portfolio.TickerData;
-import com.tsavo.trade.portfolio.TickerDataPoint;
-import com.xeiam.xchange.Exchange;
 import com.xeiam.xchange.currency.CurrencyPair;
-import com.xeiam.xchange.dto.marketdata.Ticker;
 import com.xeiam.xchange.exceptions.ExchangeException;
 import com.xeiam.xchange.exceptions.NotAvailableFromExchangeException;
 import com.xeiam.xchange.exceptions.NotYetImplementedForExchangeException;
@@ -45,10 +41,9 @@ import com.xeiam.xchange.exceptions.NotYetImplementedForExchangeException;
 public class ChartingOpportunityFinder extends ApplicationFrame implements OpportunityFinder {
 
 	private static final long serialVersionUID = 9080959986802470382L;
-	private static final int DELAY = 30000;
-	List<Exchange> exchanges;
-	Portfolio portfolio;
+
 	long lastRun = 0;
+	public CurrencyPair pair;
 
 	public static class Plot {
 		int offset = 0;
@@ -68,22 +63,20 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 
 	final long startTime = System.currentTimeMillis();
 
-	public ChartingOpportunityFinder(List<Exchange> someExchanges, Portfolio aPortfolio) throws IOException {
+	public ChartingOpportunityFinder(LiveTickerReader aTicker, CurrencyPair aPair) throws IOException {
 		super("Price Chart");
-		exchanges = someExchanges;
-		portfolio = aPortfolio;
+		pair = aPair;
 
-		final JFreeChart chart = createCombinedChart();
+		final JFreeChart chart = createCombinedChart(aTicker);
 		final ChartPanel panel = new ChartPanel(chart, true, true, true, false, true);
 		panel.setPreferredSize(new java.awt.Dimension(500, 270));
 		setContentPane(panel);
 		pack();
 		RefineryUtilities.centerFrameOnScreen(this);
 		setVisible(true);
-		// TODO Auto-generated constructor stub
 	}
 
-	private JFreeChart createCombinedChart() throws IOException {
+	private JFreeChart createCombinedChart(LiveTickerReader aTicker) throws IOException {
 
 		// create subplot 1...
 		final CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot(new DateAxis("Time"));
@@ -103,40 +96,26 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 		// collection.addSeries(plot.fastMinusSlowSeries);
 		// collection.addSeries(plot.macdSeries);
 		final NumberAxis rangeAxis1 = new NumberAxis("Price");
+		rangeAxis1.setAutoRange(true);
+		rangeAxis1.setAutoRangeIncludesZero(false);
+		rangeAxis1.setAutoRangeStickyZero(false);
 		final TimeSeriesCollection collection = new TimeSeriesCollection();
-		for (Exchange exchange : exchanges) {
-			for (CurrencyPair currency : exchange.getPollingMarketDataService().getExchangeSymbols()) {
-				if (plotMap.containsKey(currency)) {
-					continue;
-				}
-				Plot plot = new Plot(currency);
-				plot.priceSeries.setMaximumItemCount(4500);
+		Plot plot = new Plot(pair);
+		plot.priceSeries.setMaximumItemCount(4500);
+		DateTime now = new DateTime();
+		DateTime start = now.minusDays(5);
 
-				Map<CurrencyPair, TickerData> map =null;// portfolio.getTickers().get(exchange.getExchangeSpecification().getExchangeName());
-				int count = 0;
-				if (map != null) {
-					TickerData data = map.get(currency);
-					if (data != null) {
-						data.cleanUp();
-						for (TickerDataPoint item : data.getData()) {
-							if (item.getPrice() < 0.003f && item.getPrice() > 0.00004f) {
-								plot.priceSeries.addOrUpdate(new Minute(new Date(item.getTimestamp())), item.getPrice());
-								count++;
-							}
-						}
-					}
-				}
-				if (count > 0) {
-					collection.addSeries(plot.priceSeries);
-					plotMap.put(currency, plot);
-				}
-			}
+		OHLCVDataSet data = new OHLCVDataSet(aTicker.getDataForTimeframe(pair), new Duration(360000));
+		for (OHLCVData item : data.difference().average(() -> new ExponentialWeightedMovingAverageFunction(3))) {
+			plot.priceSeries.addOrUpdate(new Minute(item.startDate.toDate()),
+					item.open.add(item.close).divide(new BigDecimal(2), 8, RoundingMode.HALF_DOWN).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros());
 		}
+		collection.addSeries(plot.priceSeries);
 		final XYPlot subplot1 = new XYPlot(collection, null, rangeAxis1, renderer1);
 
-		final long ONE_DAY = 24 * 60 * 60 * 1000;
+		final long ONE_DAY = 12 * 60 * 60 * 1000;
 		XYLineAndShapeRenderer maRenderer = new XYLineAndShapeRenderer(true, false);
-		XYDataset maSataset = MovingAverage.createMovingAverage(collection, "MA", 30 * ONE_DAY, 0);
+		XYDataset maSataset = MovingAverage.createMovingAverage(collection, "MA", ONE_DAY, 0);
 		subplot1.setRenderer(1, maRenderer);
 		subplot1.setDataset(1, maSataset);
 
@@ -152,54 +131,41 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 	}
 
 	public void findOpportunities(OpportunityExecutor anExecutor) throws ExchangeException, NotAvailableFromExchangeException, NotYetImplementedForExchangeException, IOException {
-		if (lastRun + DELAY > System.currentTimeMillis()) {
-			return;
-		}
-		lastRun = System.currentTimeMillis();
-		List<Opportunity> opps = new ArrayList<Opportunity>();
-		for (Exchange exchange : exchanges) {
 
-			for (CurrencyPair currency : exchange.getPollingMarketDataService().getExchangeSymbols()) {
-				
-				Ticker ticker = exchange.getPollingMarketDataService().getTicker(currency);
-				if (ticker == null) {
-					continue;
-				}
-				Date current = ticker.getTimestamp();
-				SortedMap<CurrencyPair, TickerData> currencyTickers = null;//portfolio.tickers.get(exchange.getExchangeSpecification().getExchangeName());
-				if (currencyTickers == null) {
-					currencyTickers = Collections.synchronizedSortedMap(new TreeMap<CurrencyPair, TickerData>());
-					//portfolio.tickers.put(exchange.getExchangeSpecification().getExchangeName(), currencyTickers);
-				}
-				TickerData data = currencyTickers.get(currency);
-				if (data == null) {
-					data = new TickerData();
-					currencyTickers.put(currency, data);
-				}
-				if (data.getData().isEmpty() || current.getTime() > data.getData().last().getTimestamp()) {
-
-					if (ticker.getLast().floatValue() < 0.003f && ticker.getLast().floatValue() > 0.00004f) {
-						Plot plot = plotMap.get(currency);
-						// plot.fastMinusSlowSeries.add((System.currentTimeMillis() -
-						// startTime) / DELAY, fastEma.getAverage() - slowEma.getAverage());
-						// plot.macdSeries.add((System.currentTimeMillis() - startTime) /
-						// DELAY, macd.getAverage());
-						if (plot != null) {
-							plot.priceSeries.addOrUpdate(new Minute(ticker.getTimestamp()), ticker.getLast());
-						}
-					}
-
-					data.addSample(ticker.getLast().floatValue(), ticker.getTimestamp().getTime(), ticker.getVolume().floatValue());
-				}// DecimalFormat format = new DecimalFormat("#.##########");
-					// System.out.println(exchange.getExchangeSpecification().getExchangeName()
-					// + " " + currency + ": " + format.format(macd.getAverage()) + " " +
-					// format.format(fastEma.getAverage() - slowEma.getAverage()));
-			}
-		}
-		portfolio.save();
+		// TickerData data = currencyTickers.get(currency);
+		// if (data == null) {
+		// data = new TickerData();
+		// currencyTickers.put(currency, data);
+		// }
+		// if (data.getData().isEmpty() || current.getTime() >
+		// data.getData().last().getTimestamp()) {
+		//
+		// if (ticker.getLast().floatValue() < 0.003f &&
+		// ticker.getLast().floatValue() > 0.00004f) {
+		// Plot plot = plotMap.get(currency);
+		// // plot.fastMinusSlowSeries.add((System.currentTimeMillis()
+		// // -
+		// // startTime) / DELAY, fastEma.getAverage() -
+		// // slowEma.getAverage());
+		// // plot.macdSeries.add((System.currentTimeMillis() -
+		// // startTime) /
+		// // DELAY, macd.getAverage());
+		// if (plot != null) {
+		// plot.priceSeries.addOrUpdate(new Minute(ticker.getTimestamp()),
+		// ticker.getLast());
+		// }
+		// }
+		//
+		// data.addSample(ticker.getLast().floatValue(),
+		// ticker.getTimestamp().getTime(), ticker.getVolume().floatValue());
+		// }// DecimalFormat format = new DecimalFormat("#.##########");
+		// //
+		// System.out.println(exchange.getExchangeSpecification().getExchangeName()
+		// // + " " + currency + ": " +
+		// // format.format(macd.getAverage()) + " " +
+		// // format.format(fastEma.getAverage() -
+		// // slowEma.getAverage()));
 		return;
 	}
-
-	
 
 }
