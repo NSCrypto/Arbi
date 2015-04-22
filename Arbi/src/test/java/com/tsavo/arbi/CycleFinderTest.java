@@ -72,38 +72,7 @@ public class CycleFinderTest {
 
 		System.out.println((cycles.GetAllLeaves().size() + usdcycles
 				.GetAllLeaves().size()) + " market cycles detected.");
-		cryptsy.exchange.getExchangeSpecification().setApiKey(
-				"1948367b66763024000812b257c1c5907e1e36fb");
-		cryptsy.exchange
-				.getExchangeSpecification()
-				.setSecretKey(
-						"9c5baae0e58978fd7daa317ce2418980aae3ee0ed2dc623dbd78dfdd5ef319ff78b0f80a5a1a9178");
-
-		Exchange btce = ExchangeFactory.INSTANCE
-				.createExchange(BTCEExchange.class.getName());
-		ExchangeSpecification btceSpec = btce.getDefaultExchangeSpecification();
-		btceSpec.setApiKey("OIW7IED5-XTPBARNQ-78G66VT3-NOX4NY4T-CBPV070X");
-		btceSpec.setSecretKey("ccba84ce0908586fd2baa360e7da98d9cd5be4109a11cb8bab4269025652b834");
-
-		Exchange okcoin = ExchangeFactory.INSTANCE
-				.createExchange(OkCoinExchange.class.getName());
-		ExchangeSpecification okcoinSpec = okcoin
-				.getDefaultExchangeSpecification();
-		okcoinSpec.setExchangeSpecificParametersItem("Use_Intl", true);
-
-		// exchanges.add(ExchangeFactory.INSTANCE.createExchange(okcoinSpec));
-
-		Exchange bfx = ExchangeFactory.INSTANCE
-				.createExchange(BitfinexExchange.class.getName());
-
-		ExchangeSpecification bfxSpec = bfx.getDefaultExchangeSpecification();
-
-		bfxSpec.setApiKey("fqnmXJypz1WV5qGdxf9qPLEqYuhJ1l0BOVzJOBgz5y9");
-		bfxSpec.setSecretKey("7LaUvSp90XOoYkDM9mOf3vr7iwwhFuTcqfQs0VQxDdm");
-		exchanges.add(ExchangeFactory.INSTANCE.createExchange(bfxSpec));
-		// exchanges.add(ExchangeFactory.INSTANCE.createExchange(bter));
-		exchanges.add(ExchangeFactory.INSTANCE.createExchange(btceSpec));
-		exchanges.add(cryptsy.exchange);
+	
 		List<CachingOrderBook> orderBooks = exchanges.stream()
 				.map(exchange -> new CachingOrderBook(exchange))
 				.collect(Collectors.<CachingOrderBook> toList());
