@@ -62,6 +62,11 @@
 			<version>3.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
+			<groupId>org.uncommons.watchmaker</groupId>
+			<artifactId>watchmaker-framework</artifactId>
+			<version>0.7.1</version>
+		</dependency>
+		<dependency>
 			<groupId>javax.speech</groupId>
 			<artifactId>jsapi</artifactId>
 			<version>1.0</version>

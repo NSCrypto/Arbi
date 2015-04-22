@@ -105,8 +105,8 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 		DateTime now = new DateTime();
 		DateTime start = now.minusDays(5);
 
-		OHLCVDataSet data = new OHLCVDataSet(aTicker.getDataForTimeframe(pair), new Duration(360000));
-		for (OHLCVData item : data.difference().average(() -> new ExponentialWeightedMovingAverageFunction(3))) {
+		OHLCVDataSet data = new OHLCVDataSet(aTicker.getDataForTimeframe(pair), new Duration(260000));
+		for (OHLCVData item : data.difference().average(() -> new ExponentialWeightedMovingAverageFunction(9))) {
 			plot.priceSeries.addOrUpdate(new Minute(item.startDate.toDate()),
 					item.open.add(item.close).divide(new BigDecimal(2), 8, RoundingMode.HALF_DOWN).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros());
 		}

@@ -5,9 +5,17 @@ import java.util.List;
 
 public abstract class AbstractSignal implements Signal {
 
-	public BigDecimal test(List<BigDecimal> signalData, List<BigDecimal> tradePrices, BigDecimal aTarget, BigDecimal aStopLoss) {
-		BigDecimal performance = BigDecimal.ZERO;
-
+	
+	public static class SignalTestResults{
+		public BigDecimal performance = BigDecimal.ZERO;
+		public BigDecimal runUp = BigDecimal.ZERO;
+		public BigDecimal runDown = BigDecimal.ZERO;
+		public int trades = 0;
+		public int right = 0, wrong = 0, shorts = 0, longs = 0;
+	}
+	
+	public SignalTestResults test(List<BigDecimal> signalData, List<BigDecimal> tradePrices, BigDecimal aTarget, BigDecimal aStopLoss) {
+		SignalTestResults results = new SignalTestResults();
 		BigDecimal entryPrice = BigDecimal.ZERO;
 		boolean shortState = false, longState = false;
 
@@ -19,7 +27,15 @@ public abstract class AbstractSignal implements Signal {
 				double diff = tradePrice.doubleValue() - entryPrice.doubleValue();
 				if (diff > aTarget.doubleValue() || diff < aStopLoss.doubleValue()) {
 					longState = false;
-					performance = performance.add(new BigDecimal(diff).multiply(new BigDecimal(0.95)));
+					results.performance = results.performance.add(new BigDecimal(diff).multiply(new BigDecimal(0.95)));
+					if (diff > 0) {
+						results.runUp = results.runUp.add(new BigDecimal(diff).multiply(new BigDecimal(0.95)));
+						results.right++;
+					} else {
+						results.runDown = results.runDown.add(new BigDecimal(diff).multiply(new BigDecimal(0.95)));
+						results.wrong++;
+					}
+					results.trades++;
 				}
 			}
 
@@ -27,7 +43,15 @@ public abstract class AbstractSignal implements Signal {
 				double diff = (tradePrice.doubleValue() - entryPrice.doubleValue()) * -1;
 				if (diff > aTarget.doubleValue() || diff < aStopLoss.doubleValue()) {
 					shortState = false;
-					performance = performance.add(new BigDecimal(diff).multiply(new BigDecimal(0.95)));
+					results.performance = results.performance.add(new BigDecimal(diff).multiply(new BigDecimal(0.95)));
+					if (diff > 0) {
+						results.runUp = results.runUp.add(new BigDecimal(diff).multiply(new BigDecimal(0.95)));
+						results.right++;
+					} else {
+						results.runDown = results.runDown.add(new BigDecimal(diff).multiply(new BigDecimal(0.95)));
+						results.wrong++;
+					}
+					results.trades++;
 				}
 			}
 
@@ -35,12 +59,31 @@ public abstract class AbstractSignal implements Signal {
 
 			if (longState && isShort()) {
 				longState = false;
-				performance = performance.add(tradePrice.subtract(entryPrice).multiply(new BigDecimal(1.05)));
+				results.performance = results.performance.add(tradePrice.subtract(entryPrice).multiply(new BigDecimal(1.05)));
+				double diff = tradePrice.doubleValue() - entryPrice.doubleValue();
+				if (diff > 0) {
+					results.runUp = results.runUp.add(new BigDecimal(diff).multiply(new BigDecimal(1.05)));
+					results.right++;
+				} else {
+					results.runDown = results.runDown.add(new BigDecimal(diff).multiply(new BigDecimal(1.05)));
+					results.wrong++;
+				}
+				results.trades++;
+
 			}
 
 			if (shortState && isLong()) {
 				shortState = false;
-				performance = performance.subtract(tradePrice.subtract(entryPrice).multiply(new BigDecimal(1.05)));
+				results.performance = results.performance.subtract(tradePrice.subtract(entryPrice).multiply(new BigDecimal(1.05)));
+				double diff = (tradePrice.doubleValue() - entryPrice.doubleValue()) * -1;
+				if (diff > 0) {
+					results.runUp = results.runUp.add(new BigDecimal(diff).multiply(new BigDecimal(1.05)));
+					results.right++;
+				} else {
+					results.runDown = results.runDown.add(new BigDecimal(diff).multiply(new BigDecimal(1.05)));
+					results.wrong++;
+				}
+				results.trades++;
 			}
 
 			if (!longState && isLong()) {
@@ -52,6 +95,7 @@ public abstract class AbstractSignal implements Signal {
 				shortState = true;
 			}
 		}
-		return performance;
+		reset();
+		return results;
 	}
 }
