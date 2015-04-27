@@ -30,6 +30,7 @@ public class TickerDatabaseTest {
 	@Test
 	public void test() throws ExchangeException, NotAvailableFromExchangeException, NotYetImplementedForExchangeException, IOException, InterruptedException {
 		List<Exchange> exchanges = new ArrayList<>();
+
 		ExchangeSpecification cryptsy = new ExchangeSpecification(CryptsyExchange.class);
 
 		Exchange btce = ExchangeFactory.INSTANCE.createExchange(BTCEExchange.class.getName());
@@ -69,6 +70,7 @@ public class TickerDatabaseTest {
 				public void handleTrade(Trade trade) {
 					System.out.println(ticker.exchangeName + ": " + trade);
 				}
+
 			});
 		});
 
