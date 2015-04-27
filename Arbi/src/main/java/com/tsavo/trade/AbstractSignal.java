@@ -3,17 +3,24 @@ package com.tsavo.trade;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
 public abstract class AbstractSignal implements Signal {
 
-	
-	public static class SignalTestResults{
+	public static class SignalTestResults {
 		public BigDecimal performance = BigDecimal.ZERO;
 		public BigDecimal runUp = BigDecimal.ZERO;
 		public BigDecimal runDown = BigDecimal.ZERO;
 		public int trades = 0;
 		public int right = 0, wrong = 0, shorts = 0, longs = 0;
+
+		@Override
+		public String toString() {
+			return new ToStringBuilder(this).append("Performance", performance).append("Run Up", runUp).append("Run Down", runDown).append("Trades", trades).append("Rights", right)
+					.append("Wrongs", wrong).append("Shorts", shorts).append("Longs", longs).toString();
+		}
 	}
-	
+
 	public SignalTestResults test(List<BigDecimal> signalData, List<BigDecimal> tradePrices, BigDecimal aTarget, BigDecimal aStopLoss) {
 		SignalTestResults results = new SignalTestResults();
 		BigDecimal entryPrice = BigDecimal.ZERO;
@@ -89,10 +96,12 @@ public abstract class AbstractSignal implements Signal {
 			if (!longState && isLong()) {
 				entryPrice = tradePrice;
 				longState = true;
+				results.longs++;
 			}
 			if (!shortState && isShort()) {
 				entryPrice = tradePrice;
 				shortState = true;
+				results.shorts++;
 			}
 		}
 		reset();

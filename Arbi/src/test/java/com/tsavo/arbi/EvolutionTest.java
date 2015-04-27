@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.math3.genetics.TournamentSelection;
 import org.apache.commons.math3.util.Pair;
 import org.joda.time.Duration;
 import org.uncommons.maths.random.MersenneTwisterRNG;
@@ -34,18 +33,20 @@ import org.uncommons.watchmaker.framework.operators.IdentityOperator;
 import org.uncommons.watchmaker.framework.operators.SplitEvolution;
 import org.uncommons.watchmaker.framework.selection.RankSelection;
 import org.uncommons.watchmaker.framework.selection.RouletteWheelSelection;
-import org.uncommons.watchmaker.framework.selection.SigmaScaling;
-import org.uncommons.watchmaker.framework.selection.StochasticUniversalSampling;
 import org.uncommons.watchmaker.framework.termination.TargetFitness;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.tsavo.hippo.ExponentialWeightedMovingAverageFunction;
-import com.tsavo.hippo.LiveTickerReader;
 import com.tsavo.hippo.OHLCVDataSet;
+import com.tsavo.hippo.TickerDatabase;
 import com.tsavo.trade.AbstractSignal.SignalTestResults;
 import com.tsavo.trade.ThresholdSignal;
+import com.tsavo.trade.signal.BigDecimalOptimizableParameter;
+import com.tsavo.trade.signal.IntegerOptimizableParameter;
+import com.tsavo.trade.signal.LongOptimizableParameter;
+import com.tsavo.trade.signal.OptimizableParameterSet;
 import com.xeiam.xchange.currency.CurrencyPair;
 import com.xeiam.xchange.dto.marketdata.Trade;
 
@@ -85,7 +86,7 @@ public class EvolutionTest {
 						OHLCVDataSet data = null;
 						try {
 
-							data = dataCache.get(candidate.time);
+							data = dataCache.get(candidate.time.get());
 
 						} catch (ExecutionException e) {
 							// TODO Auto-generated catch block
@@ -93,11 +94,12 @@ public class EvolutionTest {
 						}
 						List<BigDecimal> priceCloses = data.stream().map(x -> x.close).collect(Collectors.<BigDecimal> toList());
 						OHLCVDataSet average = null;
-						average = data.difference().average(() -> new ExponentialWeightedMovingAverageFunction(candidate.window));
+						average = data.difference().average(() -> new ExponentialWeightedMovingAverageFunction(candidate.window.get()));
 						List<BigDecimal> averageCloses = average.stream().map(x -> x.close).collect(Collectors.<BigDecimal> toList());
-						ThresholdSignal signal = new ThresholdSignal("MomentumTrader", candidate.crossAbove, candidate.counterCrossAbove, candidate.crossBelow,
-								candidate.counterCrossBelow);
-						SignalTestResults test = signal.test(averageCloses, priceCloses, candidate.target, candidate.stop);
+						ThresholdSignal signal = new ThresholdSignal("MomentumTrader", candidate.crossAbove.get(), candidate.counterCrossAbove.get(), candidate.crossBelow.get(),
+								candidate.counterCrossBelow.get());
+						SignalTestResults test = signal.test(averageCloses, priceCloses, candidate.target.get(), candidate.stop.get());
+						candidate.results = test;
 						return test.performance.max(BigDecimal.ZERO).doubleValue();
 					}
 				});
@@ -136,224 +138,76 @@ public class EvolutionTest {
 		}
 
 		private SignalParameter mutateParameter(SignalParameter aParameter, Random rng) {
-
-			if (mutationChance.nextEvent(rng)) {
-				if (rng.nextBoolean()) {
-					aParameter.time += 10000 * rng.nextInt(20);
-				} else {
-					aParameter.time -= 10000 * rng.nextInt(20);
-				}
-				if (aParameter.time < 150000) {
-					aParameter.time = 0;
-				}
-				if (aParameter.time > 1000 * 10 * 40) {
-					aParameter.time = 1000 * 10 * 40;
-				}
-			}
-			if (mutationChance.nextEvent(rng)) {
-				if (rng.nextBoolean()) {
-					aParameter.window += rng.nextInt(10);
-				} else {
-					aParameter.window -= rng.nextInt(10);
-				}
-				if (aParameter.window < 1) {
-					aParameter.window = 1;
-				}
-				if (aParameter.window > 20) {
-					aParameter.window = 20;
-				}
-			}
-			if (mutationChance.nextEvent(rng)) {
-				if (rng.nextBoolean()) {
-					aParameter.crossAbove = aParameter.crossAbove.add(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-				} else {
-					aParameter.crossAbove = aParameter.crossAbove.subtract(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-				}
-				if (aParameter.crossBelow.floatValue() < 0) {
-					aParameter.crossBelow = BigDecimal.ZERO;
-				}
-				if (aParameter.crossAbove.floatValue() > 50) {
-					aParameter.crossAbove = new BigDecimal(50);
-				}
-			}
-			if (mutationChance.nextEvent(rng)) {
-				if (rng.nextBoolean()) {
-					aParameter.counterCrossAbove = aParameter.counterCrossAbove.add(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-				} else {
-					aParameter.counterCrossAbove = aParameter.counterCrossAbove.subtract(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN)
-							.stripTrailingZeros();
-				}
-				if (aParameter.counterCrossAbove.floatValue() > aParameter.crossAbove.floatValue()) {
-					aParameter.counterCrossAbove = aParameter.crossAbove;
-				}
-				if (aParameter.counterCrossAbove.floatValue() < 0) {
-					aParameter.counterCrossAbove = BigDecimal.ZERO;
-				}
-			}
-			if (mutationChance.nextEvent(rng)) {
-				if (rng.nextBoolean()) {
-					aParameter.crossBelow = aParameter.crossBelow.add(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-				} else {
-					aParameter.crossBelow = aParameter.crossBelow.subtract(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-				}
-				if (aParameter.crossBelow.floatValue() > 0) {
-					aParameter.crossBelow = BigDecimal.ZERO;
-				}
-				if (aParameter.crossBelow.floatValue() < -50) {
-					aParameter.crossBelow = new BigDecimal(-50);
-				}
-			}
-			if (mutationChance.nextEvent(rng)) {
-				if (rng.nextBoolean()) {
-					aParameter.counterCrossBelow = aParameter.counterCrossBelow.add(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-				} else {
-					aParameter.counterCrossBelow = aParameter.counterCrossBelow.subtract(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN)
-							.stripTrailingZeros();
-				}
-				if (aParameter.counterCrossBelow.floatValue() < aParameter.crossBelow.floatValue()) {
-					aParameter.counterCrossBelow = aParameter.crossBelow;
-				}
-				if (aParameter.counterCrossBelow.floatValue() > 0) {
-					aParameter.counterCrossBelow = BigDecimal.ZERO;
-				}
-			}
-
-			if (mutationChance.nextEvent(rng)) {
-				if (rng.nextBoolean()) {
-					aParameter.target = aParameter.target.add(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-				} else {
-					aParameter.target = aParameter.target.subtract(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-				}
-				if (aParameter.target.floatValue() < 0.5) {
-					aParameter.target = new BigDecimal(0.5);
-				}
-				if (aParameter.target.floatValue() > 5) {
-					aParameter.target = new BigDecimal(5);
-				}
-			}
-
-			if (mutationChance.nextEvent(rng)) {
-				if (rng.nextBoolean()) {
-					aParameter.stop = aParameter.stop.add(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-				} else {
-					aParameter.stop = aParameter.stop.subtract(new BigDecimal(rng.nextInt(3) * 0.1)).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-				}
-				if (aParameter.stop.floatValue() > -0.5) {
-					aParameter.stop = new BigDecimal(-0.5);
-				}
-				if (aParameter.stop.floatValue() < -5) {
-					aParameter.stop = new BigDecimal(-5);
-				}
-
-			}
+			aParameter.mutate(rng);
 			return aParameter;
 
 		}
-	}
-
-	public static class SignalParameterCrossover extends AbstractCrossover<SignalParameter> {
-
-		protected SignalParameterCrossover(int crossoverPoints, Probability crossoverProbability) {
-			super(crossoverPoints, crossoverProbability);
-		}
-
-		@Override
-		protected List<SignalParameter> mate(SignalParameter parent1, SignalParameter parent2, int numberOfCrossoverPoints, Random rng) {
-			List<SignalParameter> out = new ArrayList<SignalParameter>();
-			SignalParameter cross = new SignalParameter();
-			if (rng.nextBoolean()) {
-				cross.time = parent1.time;
-			} else {
-				cross.time = parent2.time;
-			}
-			if (rng.nextBoolean()) {
-				cross.window = parent1.window;
-			} else {
-				cross.window = parent2.window;
-			}
-			if (rng.nextBoolean()) {
-				cross.crossAbove = parent1.crossAbove;
-			} else {
-				cross.crossAbove = parent2.crossAbove;
-			}
-			if (rng.nextBoolean()) {
-				cross.crossBelow = parent1.crossBelow;
-			} else {
-				cross.crossBelow = parent2.crossBelow;
-			}
-			if (rng.nextBoolean()) {
-				cross.counterCrossAbove = parent1.counterCrossAbove;
-			} else {
-				cross.counterCrossAbove = parent2.counterCrossAbove;
-			}
-			if (rng.nextBoolean()) {
-				cross.counterCrossBelow = parent1.counterCrossBelow;
-			} else {
-				cross.counterCrossBelow = parent2.counterCrossBelow;
-			}
-			if (rng.nextBoolean()) {
-				cross.target = parent1.target;
-			} else {
-				cross.target = parent2.target;
-			}
-			if (rng.nextBoolean()) {
-				cross.stop = parent1.stop;
-			} else {
-				cross.stop = parent2.stop;
-			}
-			if (cross.counterCrossAbove.floatValue() > cross.crossAbove.floatValue()) {
-				cross.counterCrossAbove = cross.crossAbove;
-			}
-			if (cross.counterCrossBelow.floatValue() < cross.crossBelow.floatValue()) {
-				cross.counterCrossBelow = cross.crossBelow;
-			}
-
-			out.add(cross);
-			return out;
-
-		}
-
 	}
 
 	public static class SignalParametersCandidateFactory extends AbstractCandidateFactory<SignalParameter> {
 
 		@Override
 		public SignalParameter generateRandomCandidate(Random rng) {
-			SignalParameter out = new SignalParameter();
-			out.time = 260000;
-			out.window = rng.nextInt(20) + 1;
-			out.crossAbove = new BigDecimal(rng.nextInt(50) * 0.1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-			out.crossBelow = new BigDecimal((rng.nextInt(50) * 0.1) * -1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-			out.counterCrossAbove = new BigDecimal(rng.nextInt(50) * 0.1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-			out.counterCrossBelow = new BigDecimal((rng.nextInt(50) * 0.1) * -1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-			out.target = new BigDecimal(rng.nextInt(50) * 0.1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-			out.stop = new BigDecimal((rng.nextInt(50) * 0.1) * -1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros();
-			if (out.counterCrossBelow.floatValue() < out.crossBelow.floatValue()) {
-				out.counterCrossBelow = out.crossBelow;
+			SignalParameter out = new SignalParameter(new Probability(0.2));
+			out.time = new LongOptimizableParameter(100000 + (rng.nextInt(100) * 10000), 100000, 400000, 100, 10000);
+			out.window = new IntegerOptimizableParameter(rng.nextInt(20) + 1, 1, 30, 5, 1);
+			out.crossAbove = new BigDecimalOptimizableParameter(new BigDecimal(rng.nextInt(50) * 0.1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros(),
+					new BigDecimal(0.1), new BigDecimal(20), 20, new BigDecimal(0.1));
+			out.crossBelow = new BigDecimalOptimizableParameter(new BigDecimal((rng.nextInt(50) * 0.1) * -1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros(),
+					new BigDecimal(-0.1), new BigDecimal(2 - 0), 20, new BigDecimal(0.1));
+			out.counterCrossAbove = new BigDecimalOptimizableParameter(new BigDecimal(rng.nextInt(50) * 0.1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros(),
+					new BigDecimal(0.1), new BigDecimal(20), 20, new BigDecimal(0.1));
+			out.counterCrossBelow = new BigDecimalOptimizableParameter(new BigDecimal((rng.nextInt(50) * 0.1) * -1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros(),
+					new BigDecimal(-0.1), new BigDecimal(-20), 20, new BigDecimal(0.1));
+			out.target = new BigDecimalOptimizableParameter(new BigDecimal(rng.nextInt(50) * 0.1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros(), new BigDecimal(0.1),
+					new BigDecimal(5), 20, new BigDecimal(0.1));
+			out.stop = new BigDecimalOptimizableParameter(new BigDecimal((rng.nextInt(50) * 0.1) * -1).setScale(1, RoundingMode.HALF_EVEN).stripTrailingZeros(), new BigDecimal(
+					-0.1), new BigDecimal(-5), 20, new BigDecimal(0.1));
+			if (out.counterCrossBelow.get().floatValue() < out.crossBelow.get().floatValue()) {
+				out.counterCrossBelow.set(out.crossBelow.get());
 			}
 
-			if (out.counterCrossAbove.floatValue() > out.crossAbove.floatValue()) {
-				out.counterCrossAbove = out.crossAbove;
+			if (out.counterCrossAbove.get().floatValue() > out.crossAbove.get().floatValue()) {
+				out.counterCrossAbove.set(out.crossAbove.get());
 			}
+			out.init();
 			return out;
 		}
 
 	}
 
-	public static class SignalParameter {
-		public long time;
-		public int window;
-		public BigDecimal crossAbove;
-		public BigDecimal counterCrossAbove;
-		public BigDecimal crossBelow;
-		public BigDecimal counterCrossBelow;
-		public BigDecimal target;
-		public BigDecimal stop;
+	public static class SignalParameter extends OptimizableParameterSet {
+		public SignalParameter(Probability aChance) {
+			super(aChance);
+		}
+		
+		public void init(){
+			parameters.add(time);
+			parameters.add(window);
+			parameters.add(crossAbove);
+			parameters.add(crossBelow);
+			parameters.add(counterCrossAbove);
+			parameters.add(counterCrossBelow);
+			parameters.add(target);
+			parameters.add(stop);
+		}
+
+		
+		public LongOptimizableParameter time;
+		public IntegerOptimizableParameter window;
+		public BigDecimalOptimizableParameter crossAbove;
+		public BigDecimalOptimizableParameter counterCrossAbove;
+		public BigDecimalOptimizableParameter crossBelow;
+		public BigDecimalOptimizableParameter counterCrossBelow;
+		public BigDecimalOptimizableParameter target;
+		public BigDecimalOptimizableParameter stop;
+		public SignalTestResults results;
 
 		@Override
 		public String toString() {
 			return new ToStringBuilder(this).append("Time", time).append("Window", window).append("Cross Above", crossAbove).append("Counter Cross Above", counterCrossAbove)
-					.append("Cross Below", crossBelow).append("Counter Cross Below", counterCrossBelow).append("Target", target).append("Stop", stop).toString();
+					.append("Cross Below", crossBelow).append("Counter Cross Below", counterCrossBelow).append("Target", target).append("Stop", stop).append("Results", results)
+					.toString();
 		}
 
 		@Override
@@ -368,9 +222,8 @@ public class EvolutionTest {
 				return false;
 			}
 			SignalParameter rhs = (SignalParameter) obj;
-			return new EqualsBuilder().appendSuper(super.equals(obj)).append(time, rhs.time).append(window, rhs.window).append(crossAbove, rhs.crossAbove)
-					.append(counterCrossAbove, rhs.counterCrossAbove).append(crossBelow, rhs.crossBelow).append(counterCrossBelow, rhs.counterCrossBelow)
-					.append(target, rhs.target).append(stop, rhs.stop).isEquals();
+			return new EqualsBuilder().append(time, rhs.time).append(window, rhs.window).append(crossAbove, rhs.crossAbove).append(counterCrossAbove, rhs.counterCrossAbove)
+					.append(crossBelow, rhs.crossBelow).append(counterCrossBelow, rhs.counterCrossBelow).append(target, rhs.target).append(stop, rhs.stop).isEquals();
 		}
 
 		@Override
@@ -390,20 +243,19 @@ public class EvolutionTest {
 
 		// Create a pipeline that applies cross-over then mutation.
 		List<EvolutionaryOperator<SignalParameter>> operators = new LinkedList<EvolutionaryOperator<SignalParameter>>();
-		operators.add(new SplitEvolution<SignalParameter>(new IdentityOperator<SignalParameter>(), new SplitEvolution<SignalParameter>(new SignalParameterMutator(new Probability(
-				0.01)), new SignalParameterCrossover(1, new Probability(0.01)), 0.5), 0.95));
+		operators.add(new SplitEvolution<SignalParameter>(new IdentityOperator<SignalParameter>(), new SignalParameterMutator(new Probability(0.01)), 0.95));
 		EvolutionaryOperator<SignalParameter> pipeline = new EvolutionPipeline<SignalParameter>(operators);
 
-		LiveTickerReader reader = new LiveTickerReader("BitFinex");
+		TickerDatabase reader = new TickerDatabase("BitFinex");
 
-		FitnessEvaluator<SignalParameter> fitnessEvaluator = new SignalEvaluator(reader.getDataForTimeframe(new CurrencyPair("BTC", "USD")));
+		FitnessEvaluator<SignalParameter> fitnessEvaluator = new SignalEvaluator(reader.get(new CurrencyPair("BTC", "USD")));
 		SelectionStrategy<Object> selection = new RankSelection();
 		Random rng = new MersenneTwisterRNG();
 
 		// EvolutionEngine<SignalParameter> engine = new
 		// GenerationalEvolutionEngine<SignalParameter>(factory, pipeline,
 		// fitnessEvaluator, selection, rng);
-		IslandEvolution<SignalParameter> engine = new IslandEvolution<SignalParameter>(8, new RingMigration(), factory, pipeline, fitnessEvaluator, new RouletteWheelSelection(),
+		IslandEvolution<SignalParameter> engine = new IslandEvolution<SignalParameter>(25, new RingMigration(), factory, pipeline, fitnessEvaluator, new RouletteWheelSelection(),
 				rng);
 
 		engine.addEvolutionObserver(new IslandEvolutionObserver<SignalParameter>() {
@@ -425,7 +277,7 @@ public class EvolutionTest {
 				}
 			}
 		});
-		SignalParameter result = engine.evolve(500, 20, 10, 10, new TargetFitness(60, true));
+		SignalParameter result = engine.evolve(200, 20, 10, 10, new TargetFitness(60, true));
 		System.out.println(result);
 	}
 }

@@ -37,7 +37,7 @@ public class CycleOpportunity implements Opportunity {
 				if(tradeableAmount == null){
 					BigDecimal amount;
 					switch(order.limitOrder.getCurrencyPair().baseSymbol){
-						case "BTC": amount = new BigDecimal(0.025); break;
+						case "BTC": amount = new BigDecimal(0.05); break;
 						case "LTC": amount = new BigDecimal(5); break;
 						case "DRK": amount = new BigDecimal(5); break;
 						default : amount = new BigDecimal(5);
@@ -71,7 +71,7 @@ public class CycleOpportunity implements Opportunity {
 				if(tradeableAmount == null){
 					BigDecimal amount;
 					switch(order.limitOrder.getCurrencyPair().baseSymbol){
-						case "BTC": amount = new BigDecimal(0.025); break;
+						case "BTC": amount = new BigDecimal(0.05); break;
 						case "LTC": amount = new BigDecimal(5); break;
 						case "DRK": amount = new BigDecimal(5); break;
 						default : amount = new BigDecimal(5);
@@ -130,7 +130,7 @@ public class CycleOpportunity implements Opportunity {
 				if(tradeableAmount == null){
 					BigDecimal amount;
 					switch(order.limitOrder.getCurrencyPair().baseSymbol){
-						case "BTC": amount = new BigDecimal(0.025); break;
+						case "BTC": amount = new BigDecimal(0.05); break;
 						case "LTC": amount = new BigDecimal(5); break;
 						case "DRK": amount = new BigDecimal(5); break;
 						default : amount = new BigDecimal(5);
@@ -159,7 +159,7 @@ public class CycleOpportunity implements Opportunity {
 				if(tradeableAmount == null){
 					BigDecimal amount;
 					switch(order.limitOrder.getCurrencyPair().baseSymbol){
-						case "BTC": amount = new BigDecimal(0.025); break;
+						case "BTC": amount = new BigDecimal(0.05); break;
 						case "LTC": amount = new BigDecimal(5); break;
 						case "DRK": amount = new BigDecimal(5); break;
 						default : amount = new BigDecimal(5);

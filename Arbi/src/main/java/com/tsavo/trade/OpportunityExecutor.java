@@ -34,27 +34,23 @@ public class OpportunityExecutor {
 						opp.getSuggestions(aPortfolio).forEach(System.out::println);
 						continue;
 					}
-					try {
+
 						System.out.println("Executing trade: " + opp);
-						opp.trade(me);
-						speech.speak("Executing trade: " + opp);
+						try {
+							opp.trade(me);
+						} catch (ExchangeException | NotAvailableFromExchangeException | NotYetImplementedForExchangeException | IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						try {
+							speech.speak("Executing trade: " + opp);
+						} catch (EngineException | AudioException | IllegalArgumentException | InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 						aPortfolio.clearCache();
 
-					} catch (ExchangeException | NotAvailableFromExchangeException | NotYetImplementedForExchangeException | IOException e) {
-						e.printStackTrace();
-					} catch (EngineException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (AudioException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IllegalArgumentException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+				
 
 				}
 			}

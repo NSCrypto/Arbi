@@ -34,11 +34,7 @@ public class CycleOpportunityFinder implements OpportunityFinder {
 					cycles.populateCycle(portfolio, anExecutor);
 					watch.split();
 					System.out.println("Opportunity cycle " + cycles.baseSymbol + " completed in " + watch.toSplitString() + ".");
-					try {
-						Thread.sleep(10000);
-					} catch (InterruptedException e) {
-						return;
-					}
+					portfolio.clearCache();
 				}
 			}
 		};

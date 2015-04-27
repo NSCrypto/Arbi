@@ -28,9 +28,9 @@ import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
 import com.tsavo.hippo.ExponentialWeightedMovingAverageFunction;
-import com.tsavo.hippo.LiveTickerReader;
 import com.tsavo.hippo.OHLCVData;
 import com.tsavo.hippo.OHLCVDataSet;
+import com.tsavo.hippo.TickerDatabase;
 import com.tsavo.trade.OpportunityExecutor;
 import com.tsavo.trade.opportunity.OpportunityFinder;
 import com.xeiam.xchange.currency.CurrencyPair;
@@ -63,7 +63,7 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 
 	final long startTime = System.currentTimeMillis();
 
-	public ChartingOpportunityFinder(LiveTickerReader aTicker, CurrencyPair aPair) throws IOException {
+	public ChartingOpportunityFinder(TickerDatabase aTicker, CurrencyPair aPair) throws IOException {
 		super("Price Chart");
 		pair = aPair;
 
@@ -76,7 +76,7 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 		setVisible(true);
 	}
 
-	private JFreeChart createCombinedChart(LiveTickerReader aTicker) throws IOException {
+	private JFreeChart createCombinedChart(TickerDatabase aTicker) throws IOException {
 
 		// create subplot 1...
 		final CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot(new DateAxis("Time"));
@@ -105,7 +105,7 @@ public class ChartingOpportunityFinder extends ApplicationFrame implements Oppor
 		DateTime now = new DateTime();
 		DateTime start = now.minusDays(5);
 
-		OHLCVDataSet data = new OHLCVDataSet(aTicker.getDataForTimeframe(pair), new Duration(260000));
+		OHLCVDataSet data = new OHLCVDataSet(aTicker.get(pair), new Duration(260000));
 		for (OHLCVData item : data.difference().average(() -> new ExponentialWeightedMovingAverageFunction(9))) {
 			plot.priceSeries.addOrUpdate(new Minute(item.startDate.toDate()),
 					item.open.add(item.close).divide(new BigDecimal(2), 8, RoundingMode.HALF_DOWN).setScale(8, RoundingMode.HALF_DOWN).stripTrailingZeros());

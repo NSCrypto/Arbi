@@ -12,8 +12,8 @@ import org.joda.time.Duration;
 import org.junit.Test;
 
 import com.tsavo.hippo.ExponentialWeightedMovingAverageFunction;
-import com.tsavo.hippo.LiveTickerReader;
 import com.tsavo.hippo.OHLCVDataSet;
+import com.tsavo.hippo.TickerDatabase;
 import com.tsavo.trade.AbstractSignal.SignalTestResults;
 import com.tsavo.trade.ThresholdSignal;
 import com.xeiam.xchange.currency.CurrencyPair;
@@ -36,8 +36,8 @@ public class ThresholdSignalTest {
 	}
 	@Test
 	public void testThresholdSignal() {
-		LiveTickerReader ticker = new LiveTickerReader("BitFinex");
-		SortedSet<Trade> rawPriceData = ticker.getDataForTimeframe(new CurrencyPair("BTC", "USD"));
+		TickerDatabase ticker = new TickerDatabase("BitFinex");
+		SortedSet<Trade> rawPriceData = ticker.get(new CurrencyPair("BTC", "USD"));
 		List<BigDecimal> outputs = new ArrayList<>();
 		List<Long> times = new ArrayList<>();
 		for (long time = 1000 * 10 * 10; time < 1000 * 30 * 10; time += 1000 * 5) {

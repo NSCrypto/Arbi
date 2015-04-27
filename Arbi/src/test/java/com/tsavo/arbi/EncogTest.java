@@ -35,7 +35,7 @@ import org.encog.util.simple.EncogUtility;
 import org.encog.util.time.TimeUnit;
 import org.junit.Test;
 
-import com.tsavo.hippo.LiveTickerReader;
+import com.tsavo.hippo.TickerDatabase;
 import com.tsavo.trade.nn.Config;
 
 public class EncogTest {
@@ -54,7 +54,7 @@ public class EncogTest {
 	@Test
 	public void test() {
 
-		LiveTickerReader ticker = new LiveTickerReader("BitFinex");
+		TickerDatabase ticker = new TickerDatabase("BitFinex");
 		MarketLoader loader = null;//new ExchangeLoader(ticker, 1000 * 60 * 60);
 		MarketMLDataSet market = new MarketMLDataSet(loader, Config.INPUT_WINDOW, Config.PREDICT_WINDOW);
 		MarketDataDescription desc = new MarketDataDescription(Config.TICKER, MarketDataType.ADJUSTED_CLOSE, true, true);
